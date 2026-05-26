@@ -437,7 +437,7 @@ class MegUtil
             $logManager->info("MEG: Campaign {$campaignKey} is the winner for group {$groupId} for user ID:" . CampaignUtil::getUserIdForLogging($context) . " using random algorithm");
             (new StorageDecorator())->setDataInStorage(
                 [
-                    'featureKey' => "_vwo_meta_meg_{$groupId}",
+                    'featureKey' => Constants::WINGIFY_META_MEG_PREFIX . $groupId,
                     'context' => $context,
                     'experimentId' => $winnerCampaign->getId(),
                     'experimentKey' => $winnerCampaign->getKey(),
@@ -556,7 +556,7 @@ class MegUtil
         if ($winnerCampaign) {
             (new StorageDecorator())->setDataInStorage(
                 [
-                    'featureKey' => "_vwo_meta_meg_{$groupId}",
+                    'featureKey' => Constants::WINGIFY_META_MEG_PREFIX . $groupId,
                     'context' => $context,
                     'experimentId' => $winnerCampaign->getId(),
                     'experimentKey' => $winnerCampaign->getKey(),

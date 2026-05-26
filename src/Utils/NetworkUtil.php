@@ -295,8 +295,8 @@ class NetworkUtil {
         
         // if userAgent is passed, add os_version and browser_version
         if (!empty($visitorUserAgent) && $visitorUserAgent !== null) {
-            if (!empty($context->getVwo()) && !empty($context->getVwo()->getUaInfo())) {
-                $uaInfo = $context->getVwo()->getUaInfo();
+            if (!empty($context->getWingify()) && !empty($context->getWingify()->getUaInfo())) {
+                $uaInfo = $context->getWingify()->getUaInfo();
                 $properties['d']['visitor']['props']['vwo_osv'] = $uaInfo->os_version;
                 $properties['d']['visitor']['props']['vwo_bv'] = $uaInfo->browser_version;
             }

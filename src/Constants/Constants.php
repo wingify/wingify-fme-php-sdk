@@ -65,6 +65,9 @@ class Constants {
 
     const VWO_FS_ENVIRONMENT = 'vwo_fs_environment';
 
+    /** Storage key prefix for mutually exclusive group (MEG) winner metadata */
+    const WINGIFY_META_MEG_PREFIX = '_wingify_meta_meg_';
+
     const RANDOM_ALGO = 1;
 
     const PRODUCT = 'product';

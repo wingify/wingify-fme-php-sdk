@@ -196,11 +196,11 @@ class SegmentEvaluator implements Segmentation
             return false;
         }
 
-        if (empty($this->context->getVwo()) || empty($this->context->getVwo()->getLocation())) {
+        if (empty($this->context->getWingify()) || empty($this->context->getWingify()->getLocation())) {
             return false;
         }
 
-        return $this->valuesMatch($locationMap, $this->context->getVwo()->getLocation());
+        return $this->valuesMatch($locationMap, $this->context->getWingify()->getLocation());
     }
 
     public function checkUserAgentParser($uaParserMap)
@@ -212,10 +212,10 @@ class SegmentEvaluator implements Segmentation
             return false;
         }
 
-        if (empty($this->context->getVwo()) || empty($this->context->getVwo()->getUaInfo())) {
+        if (empty($this->context->getWingify()) || empty($this->context->getWingify()->getUaInfo())) {
             return false;
         }
-        return $this->checkValuePresent($uaParserMap, $this->context->getVwo()->getUaInfo());
+        return $this->checkValuePresent($uaParserMap, $this->context->getWingify()->getUaInfo());
     }
 
     public function checkInUserStorage($featureKey, $context)

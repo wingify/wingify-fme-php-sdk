@@ -63,24 +63,24 @@ class GetFlagTest extends TestCase
 
     protected function runSingleTest($testData, $storageMap = null)
     {
-        $vwoOptions = [
+        $wingifyOptions = [
             'accountId' => '123456',
             'sdkKey' => 'abcdef',
         ];
 
         if ($storageMap !== null) {
-            $vwoOptions['storage'] = $storageMap;
+            $wingifyOptions['storage'] = $storageMap;
         }
 
-        $vwoBuilder = new WingifyBuilder($vwoOptions);
-        $vwoBuilder->setLogger();
+        $wingifyBuilder = new WingifyBuilder($wingifyOptions);
+        $wingifyBuilder->setLogger();
         $settings = $this->testsData[$testData['settings']];
-        $vwoBuilder->setSettings($settings);
+        $wingifyBuilder->setSettings($settings);
 
         $options = [
             'sdkKey' => 'sdk-key',
             'accountId' => 'account-id',
-            'vwoBuilder' => $vwoBuilder, // pass only for E2E tests
+            'wingifyBuilder' => $wingifyBuilder, // pass only for E2E tests
         ];
 
         $vwoClient = Wingify::init($options);

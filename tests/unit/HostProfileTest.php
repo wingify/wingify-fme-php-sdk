@@ -93,18 +93,6 @@ class HostProfileTest extends TestCase
         $this->assertTrue($service->isProxyUrlProvided);
     }
 
-    public function testVwoShimBuilderDefaultsToVwoHostProfile()
-    {
-        $builder = new VWOBuilder([
-            'sdkKey' => 'test-key',
-            'accountId' => '12345',
-        ]);
-        $builder->setLogger()->setSettingsService();
-
-        $this->assertEquals(Constants::HOST_PROFILE_VWO, $builder->getSettingsService()->hostProfile);
-        $this->assertEquals(Constants::LEGACY_HOST, $builder->getSettingsService()->getEventsHostname());
-    }
-
     public function testWingifyProfileUsesWingifyLogPrefixByDefault()
     {
         $config = LogPrefixUtil::buildLoggerConfig([

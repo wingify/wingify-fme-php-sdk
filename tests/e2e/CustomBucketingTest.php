@@ -196,19 +196,19 @@ class CustomBucketingTest extends TestCase
      */
     private function createVWOClient()
     {
-        $vwoOptions = [
+        $wingifyOptions = [
             'accountId' => '123456',
             'sdkKey' => 'abcdef',
         ];
 
-        $vwoBuilder = new WingifyBuilder($vwoOptions);
-        $vwoBuilder->setLogger();
-        $vwoBuilder->setSettings(self::$MOCK_SETTINGS_FILE);
+        $wingifyBuilder = new WingifyBuilder($wingifyOptions);
+        $wingifyBuilder->setLogger();
+        $wingifyBuilder->setSettings(self::$MOCK_SETTINGS_FILE);
 
         $options = [
             'sdkKey' => 'sdk-key',
             'accountId' => 'account-id',
-            'vwoBuilder' => $vwoBuilder,
+            'wingifyBuilder' => $wingifyBuilder,
         ];
 
         return Wingify::init($options);
@@ -299,17 +299,17 @@ class CustomBucketingTest extends TestCase
      
     public function testNoBucketingSeedCustomSaltPresent10UsersRandomlyDistributedButEachUserGettingSameVariationInBothFlags()
     {
-        $vwoBuilder = new WingifyBuilder([
+        $wingifyBuilder = new WingifyBuilder([
             'accountId' => '123456',
             'sdkKey' => 'abcdef'
         ]);
-        $vwoBuilder->setLogger();
-        $vwoBuilder->setSettings(self::$SETTINGS_WITH_SAME_SALT);
+        $wingifyBuilder->setLogger();
+        $wingifyBuilder->setSettings(self::$SETTINGS_WITH_SAME_SALT);
 
         $vwoClient = Wingify::init([
             'sdkKey' => 'sdk-key',
             'accountId' => 'account-id',
-            'vwoBuilder' => $vwoBuilder
+            'wingifyBuilder' => $wingifyBuilder
         ]);
         $this->assertNotNull($vwoClient);
 
@@ -328,17 +328,17 @@ class CustomBucketingTest extends TestCase
     //Case 6: Bucketing seed present, custom salt present - 10 users, all users getting same variation in both flags
     public function testBucketingSeedPresentSaltPresent10UsersAllUsersGettingSameVariationInBothFlags()
     {
-        $vwoBuilder = new WingifyBuilder([
+        $wingifyBuilder = new WingifyBuilder([
             'accountId' => '123456',
             'sdkKey' => 'abcdef'
         ]);
-        $vwoBuilder->setLogger();
-        $vwoBuilder->setSettings(self::$SETTINGS_WITH_SAME_SALT);
+        $wingifyBuilder->setLogger();
+        $wingifyBuilder->setSettings(self::$SETTINGS_WITH_SAME_SALT);
 
         $vwoClient = Wingify::init([
             'sdkKey' => 'sdk-key',
             'accountId' => 'account-id',
-            'vwoBuilder' => $vwoBuilder
+            'wingifyBuilder' => $wingifyBuilder
         ]);
         $this->assertNotNull($vwoClient);
 
@@ -393,21 +393,21 @@ class CustomBucketingTest extends TestCase
     private function createVWOClientWithAliasingMock($resolvedUserIds)
     {
         // Create VWO client with aliasing enabled and mock network service
-        $vwoOptions = [
+        $wingifyOptions = [
             'accountId' => '123456',
             'sdkKey' => 'abcdef',
             'isAliasingEnabled' => true,
             'gatewayService' => ['url' => 'http://localhost:3000']
         ];
 
-        $vwoBuilder = new WingifyBuilder($vwoOptions);
-        $vwoBuilder->setLogger();
-        $vwoBuilder->setSettings(self::$MOCK_SETTINGS_FILE);
+        $wingifyBuilder = new WingifyBuilder($wingifyOptions);
+        $wingifyBuilder->setLogger();
+        $wingifyBuilder->setSettings(self::$MOCK_SETTINGS_FILE);
 
         $vwoClient = Wingify::init([
             'sdkKey' => 'sdk-key',
             'accountId' => 'account-id',
-            'vwoBuilder' => $vwoBuilder,
+            'wingifyBuilder' => $wingifyBuilder,
         ]);
         //mock service container
         $reflection = new \ReflectionClass($vwoClient);
