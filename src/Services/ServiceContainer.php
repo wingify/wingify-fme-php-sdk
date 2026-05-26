@@ -150,7 +150,7 @@ class ServiceContainer
      * @deprecated Use getSdkOptions() instead.
      * @return array
      */
-    public function getWingifyOptions(): array
+    public function getVWOOptions(): array
     {
         return $this->getSdkOptions();
     }

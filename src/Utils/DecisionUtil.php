@@ -31,7 +31,6 @@ use wingify\Services\StorageService;
 use wingify\Services\ServiceContainer;
 use wingify\Packages\DecisionMaker\DecisionMaker;
 use wingify\Packages\SegmentationEvaluator\Core\SegmentationManager;
-use wingify\Constants\Constants;
 use wingify\Decorators\StorageDecorator;
 
 class DecisionUtil
@@ -46,14 +45,14 @@ class DecisionUtil
         StorageService $storageService,
         &$decision
     ) {
-        $wingifyUserId = UuidUtil::getUUID((string)$context->getId(), $serviceContainer->getSettings()->getAccountId());
+        $vwoUserId = UuidUtil::getUUID((string)$context->getId(), $serviceContainer->getSettings()->getAccountId());
         $campaignId = $campaign->getId();
 
         if ($campaign->getType() === CampaignTypeEnum::AB) {
-            // Set _wingifyUserId for variation targeting variables
+            // Set _vwoUserId for variation targeting variables
             $context->setVariationTargetingVariables(array_merge(
                 $context->getVariationTargetingVariables() ?? [],
-                ['_wingifyUserId' => $campaign->getIsUserListEnabled() ? $wingifyUserId : $context->getId()]
+                ['_vwoUserId' => $campaign->getIsUserListEnabled() ? $vwoUserId : $context->getId()]
             ));
             $decision['variationTargetingVariables'] = $context->getVariationTargetingVariables();
 
@@ -74,7 +73,7 @@ class DecisionUtil
         // userlist segment is also available for campaign pre segmentation
         $context->setCustomVariables(array_merge(
             $context->getCustomVariables() ?? [],
-            ['_wingifyUserId' => $campaign->getIsUserListEnabled() ? $wingifyUserId : $context->getId()]
+            ['_vwoUserId' => $campaign->getIsUserListEnabled() ? $vwoUserId : $context->getId()]
         ));
         $decision['customVariables'] = $context->getCustomVariables();
 
@@ -101,7 +100,7 @@ class DecisionUtil
         } else {
             if (!empty($groupDetails) && isset($groupDetails['groupId'])) {
                 $storedData = (new StorageDecorator())->getFeatureFromStorage(
-                    Constants::WINGIFY_META_MEG_PREFIX . $groupDetails['groupId'],
+                    "_vwo_meta_meg_{$groupDetails['groupId']}",
                     $context,
                     $storageService,
                     $serviceContainer

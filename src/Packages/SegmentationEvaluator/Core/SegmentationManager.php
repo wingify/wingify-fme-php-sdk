@@ -75,7 +75,7 @@ class SegmentationManager {
         if ((
             $feature->getIsGatewayServiceRequired() && 
             $serviceContainer->getSettingsService()->isGatewayServiceProvided && 
-            $context->getWingify() === null
+            $context->getVwo() === null
         ) || $isGatewayServiceRequiredForHoldouts) {
             // if both user agent and ip address are not available, return
             if ($context->getUserAgent() === null && $context->getIpAddress() === null) {
@@ -93,7 +93,7 @@ class SegmentationManager {
             try {
                 $params = GatewayServiceUtil::getQueryParams($queryParams);
                 $gatewayData = GatewayServiceUtil::getFromGatewayService($serviceContainer, $params, UrlEnum::GET_USER_DATA, $context);
-                $context->setWingify((new ContextMetaModel())->modelFromDictionary($gatewayData));
+                $context->setVwo((new ContextMetaModel())->modelFromDictionary($gatewayData));
             } catch (\Exception $err) {
                 $loggerService->error('ERROR_SETTING_SEGMENTATION_CONTEXT', ['err' => $err->getMessage(), 'an' => ApiEnum::GET_FLAG, 'uuid' => $context->getUUID(), 'sId' => $context->getSessionId()]);
             }

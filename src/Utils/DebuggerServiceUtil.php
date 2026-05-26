@@ -71,7 +71,7 @@ class DebuggerServiceUtil {
     /**
      * @deprecated Use sendDebugEvent() instead.
      */
-    public static function sendDebugEventToWingify($eventProps = [])
+    public static function sendDebugEventToVWO($eventProps = [])
     {
         self::sendDebugEvent($eventProps);
     }

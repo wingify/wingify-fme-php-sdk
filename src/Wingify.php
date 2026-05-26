@@ -57,12 +57,14 @@ class Wingify
      * This method supports multiple instances by creating a new WingifyBuilder each time.
      *
      * @param array $options Configuration options for setting up the SDK.
-     * @return array{instance: WingifyClient|null, wingifyBuilder: WingifyBuilder}
+     * @return array{instance: WingifyClient|null, vwoBuilder: WingifyBuilder}
      */
     private static function createInstance($options)
     {
         if (isset($options['wingifyBuilder'])) {
             $builder = $options['wingifyBuilder'];
+        } elseif (isset($options['vwoBuilder'])) {
+            $builder = $options['vwoBuilder'];
         } else {
             $builder = static::createDefaultBuilder($options);
         }
@@ -108,7 +110,7 @@ class Wingify
             $instance = $builder->build($settings);
         }
 
-        return ['instance' => $instance, 'wingifyBuilder' => $builder];
+        return ['instance' => $instance, 'vwoBuilder' => $builder];
     }
 
     /**
@@ -146,7 +148,7 @@ class Wingify
 
             $result = self::createInstance($options);
             $instance = $result['instance'];
-            $builder = $result['wingifyBuilder'];
+            $builder = $result['vwoBuilder'];
 
             if (!$instance) {
                 return null;

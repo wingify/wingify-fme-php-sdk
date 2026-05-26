@@ -87,10 +87,9 @@ class SegmentOperandEvaluator {
 
     public function evaluateUserDSL($dslOperandValue, $properties) {
         $properties = json_decode(json_encode($properties),true);
-        $wingifyUserId = $properties['_wingifyUserId'] ?? $properties['_vwoUserId'] ?? null;
         $users = explode(',', $dslOperandValue);
         foreach ($users as $user) {
-            if ($wingifyUserId !== null && trim($user) === $wingifyUserId) {
+            if (trim($user) === $properties['_vwoUserId']) {
                 return true;
             }
         }
@@ -332,11 +331,11 @@ class SegmentOperandEvaluator {
      * @return string|null The browser version or null if not available.
      */
     private function getBrowserVersionFromContext($context) {
-        if (empty($context->getWingify()) || empty($context->getWingify()->getUaInfo())) {
+        if (empty($context->getVwo()) || empty($context->getVwo()->getUaInfo())) {
             return null;
         }
         
-        $uaInfo = $context->getWingify()->getUaInfo();
+        $uaInfo = $context->getVwo()->getUaInfo();
         return isset($uaInfo->browser_version) ? $uaInfo->browser_version : null;
     }
 
@@ -347,11 +346,11 @@ class SegmentOperandEvaluator {
      * @return string|null The OS version or null if not available.
      */
     private function getOsVersionFromContext($context) {
-        if (empty($context->getWingify()) || empty($context->getWingify()->getUaInfo())) {
+        if (empty($context->getVwo()) || empty($context->getVwo()->getUaInfo())) {
             return null;
         }
         
-        $uaInfo = $context->getWingify()->getUaInfo();
+        $uaInfo = $context->getVwo()->getUaInfo();
         return isset($uaInfo->os_version) ? $uaInfo->os_version : null;
     }
 

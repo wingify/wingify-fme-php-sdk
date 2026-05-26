@@ -29,17 +29,17 @@ class TrackEventTest extends TestCase
 
     protected function setUp(): void
     {
-        $wingifyBuilder = new WingifyBuilder([
+        $vwoBuilder = new WingifyBuilder([
             'accountId' => '123456',
             'sdkKey' => 'abcdef'
         ]);
-        $wingifyBuilder->setLogger();
-        $wingifyBuilder->setSettings(SettingsAndTestCases::get()['BASIC_ROLLOUT_SETTINGS']);
+        $vwoBuilder->setLogger();
+        $vwoBuilder->setSettings(SettingsAndTestCases::get()['BASIC_ROLLOUT_SETTINGS']);
 
         $this->options = [
             'sdkKey' => 'sdk-key',
             'accountId' => 'account-id',
-            'wingifyBuilder' => $wingifyBuilder, // pass only for E2E tests
+            'vwoBuilder' => $vwoBuilder, // pass only for E2E tests
         ];
     }
 

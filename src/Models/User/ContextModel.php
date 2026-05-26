@@ -29,7 +29,7 @@ class ContextModel
     private $ipAddress;
     private $customVariables = [];
     private $variationTargetingVariables = [];
-    private $_wingify;
+    private $_vwo;
     private $postSegmentationVariables = [];
     private $uuid;
     private $sessionId;
@@ -50,8 +50,8 @@ class ContextModel
             $this->variationTargetingVariables = $context['variationTargetingVariables'];
         }
 
-        if (isset($context['_wingify'])) {
-            $this->_wingify = $context['_wingify'];
+        if (isset($context['_vwo'])) {
+            $this->_vwo = $context['_vwo'];
         }
 
         if (isset($context['postSegmentationVariables'])) {
@@ -97,9 +97,9 @@ class ContextModel
         return $this->variationTargetingVariables;
     }
 
-    public function getWingify()
+    public function getVwo()
     {
-        return $this->_wingify;
+        return $this->_vwo;
     }
 
     public function setCustomVariables($customVariables)
@@ -112,9 +112,9 @@ class ContextModel
         $this->variationTargetingVariables = $variationTargetingVariables;
     }
 
-    public function setWingify($wingify)
+    public function setVwo($vwo)
     {
-        $this->_wingify = $wingify;
+        $this->_vwo = $vwo;
     }
 
     public function getPostSegmentationVariables()
