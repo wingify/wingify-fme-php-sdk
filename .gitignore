@@ -1,9 +1,0 @@
-.DS_STORE
-.idea/*
-build/
-vendor/
-composer.phar
-composer.lock
-coverage/
-.vscode/
-*.cache
