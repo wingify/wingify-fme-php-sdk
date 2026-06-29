@@ -49,7 +49,7 @@ class Constants {
     const DEFAULT_EVENTS_PER_REQUEST = 100;
     const SDK_NAME = 'wingify-fme-php-sdk';
 
-    const SDK_VERSION = '2.0.0';
+    const SDK_VERSION = '2.5.0';
     const AP = 'server';
 
     const SETTINGS = 'settings';

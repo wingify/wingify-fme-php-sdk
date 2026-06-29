@@ -34,8 +34,12 @@ class SettingsModel {
   private $collectionPrefix;
   private $isWebConnectivityEnabled;
   private $holdouts = [];
+  private $isTrackingUsageEnabled = false;
 
-  public function __construct($settings) {    
+  public function __construct($settings) {
+    if (!$settings) {
+        return;
+    }
     $this->sdkKey = isset($settings->sK) ? $settings->sK : (isset($settings->sdkKey) ? $settings->sdkKey : null);
     $this->accountId = isset($settings->a) ? $settings->a : (isset($settings->accountId) ? $settings->accountId : null);
     $this->version = isset($settings->v) ? $settings->v : (isset($settings->version) ? $settings->version : null);
@@ -65,6 +69,12 @@ class SettingsModel {
       foreach ($holdoutList as $holdout) {
         $this->holdouts[] = (new HoldoutModel())->modelFromDictionary($holdout);
       }
+    }
+    // set isTrackingUsageEnabled from settings key isMAU if present, default to false if not present
+    if ($settings instanceof SettingsModel) {
+        $this->isTrackingUsageEnabled = $settings->isTrackingUsageEnabled();
+    } else {
+        $this->isTrackingUsageEnabled = isset($settings->isMAU) ? $settings->isMAU : false;
     }
   }
 
@@ -106,6 +116,10 @@ class SettingsModel {
 
   public function isWebConnectivityEnabled() {
     return $this->isWebConnectivityEnabled;
+  }
+
+  public function isTrackingUsageEnabled() {
+    return $this->isTrackingUsageEnabled;
   }
   
   public function toArray(): array {

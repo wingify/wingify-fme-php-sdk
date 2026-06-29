@@ -55,6 +55,7 @@ class GetFlag
         ServiceContainer $serviceContainer,
         bool $isDebuggerUsed = false
     ) {
+        $isVariationShownFired = false;
         $ruleEvaluationUtil = new RuleEvaluationUtil();
         $isEnabled = false;
         $rolloutVariationToReturn = null;
@@ -132,6 +133,12 @@ class GetFlag
                     $matchedHoldouts = $holdoutResult['matchedHoldouts'];
                     $notMatchedHoldouts = $holdoutResult['notMatchedHoldouts'];
                     $holdoutPayloads = $holdoutResult['holdoutPayloads'];
+        
+                    // case: evaluate the new holdouts in settings file and send the impression for them
+                    // set isVariationShownFired to true if any holdout payloads are found
+                    if (count($holdoutPayloads) > 0) {
+                        $isVariationShownFired = true;
+                    }
                     
                     // updatedHoldoutIds is the array of holdout ids for which user became part of the holdouts
                     $updatedHoldoutIds = array_merge(
@@ -169,6 +176,16 @@ class GetFlag
                             ImpressionUtil::SendImpressionForVariationShownInBatch($holdoutPayloads, $serviceContainer);
                         }
                     }
+
+                    // case: user found in storage only for a holdout, no rules evaluated
+                    // send usage tracking call if no primary variationShown event was dispatched
+                    if ($serviceContainer->getSettings()->isTrackingUsageEnabled() && !$isVariationShownFired) {
+                        ImpressionUtil::createAndSendImpressionForUsageTracking($serviceContainer->getSettings(), $featureKey, $context, $serviceContainer, $batchPayload);
+                    }
+                    if(!$serviceContainer->getSettingsService()->isGatewayServiceProvided && !$serviceContainer->getSettingsService()->isProxyUrlProvided && count($batchPayload) > 0) {
+                        ImpressionUtil::SendImpressionForVariationShownInBatch($batchPayload, $serviceContainer);
+                    }
+
                     return new GetFlagResultUtil(false, [], $ruleStatus, $context->getSessionId(), $context->getUUID());
                     }
                 }
@@ -193,7 +210,23 @@ class GetFlag
                     ));
                     $decision['isUserPartOfCampaign'] = true;
                     // network calls for holdouts that are newly added in settings and are not present in storage
-                    $updatedNotInHoldoutIds = HoldoutUtil::sendNetworkCallsForNotInHoldouts($serviceContainer, $feature, $context, $decision, $storedData, $storageService);
+                    $holdoutCatchupResult = HoldoutUtil::sendNetworkCallsForNotInHoldouts($serviceContainer, $feature, $context, $decision, $storedData, $storageService);
+                    $updatedNotInHoldoutIds = $holdoutCatchupResult['updatedNotInHoldoutIds'];
+                    
+                    // case: if updatedNotInHoldoutIds count is greater than storedNotInHoldoutId count, then it means that there are some new holdouts that are added in settings and are not present in storage, so set isVariationShownFired to true
+                    if ($holdoutCatchupResult['isNetworkCallSent']) {
+                        $isVariationShownFired = true;
+                    }
+
+                    // case: stored data found for the user but no holdout impression was sent
+                    // send usage tracking for cached experiment decision if usage tracking is enabled
+                    if ($serviceContainer->getSettings()->isTrackingUsageEnabled() && !$isVariationShownFired) {
+                        ImpressionUtil::createAndSendImpressionForUsageTracking($serviceContainer->getSettings(), $featureKey, $context, $serviceContainer, $batchPayload);
+                    }
+                    
+                    if(!$serviceContainer->getSettingsService()->isGatewayServiceProvided && !$serviceContainer->getSettingsService()->isProxyUrlProvided && count($batchPayload) > 0) {
+                        ImpressionUtil::SendImpressionForVariationShownInBatch($batchPayload, $serviceContainer);
+                    }
                     return new GetFlagResultUtil(true, $variation->getVariables(), $ruleStatus, $context->getSessionId(), $context->getUUID());
                 }
             }
@@ -217,7 +250,7 @@ class GetFlag
                 ));
 
                 // network calls for holdouts that are newly added in settings and are not present in storage
-                $updatedNotInHoldoutIds = HoldoutUtil::sendNetworkCallsForNotInHoldouts(
+                $holdoutCatchupResult = HoldoutUtil::sendNetworkCallsForNotInHoldouts(
                         $serviceContainer,
                         $feature,
                         $context,
@@ -225,6 +258,12 @@ class GetFlag
                         $storedData,
                         $storageService
                     );
+                $updatedNotInHoldoutIds = $holdoutCatchupResult['updatedNotInHoldoutIds'];
+                
+                // case: if updatedNotInHoldoutIds count is greater than storedNotInHoldoutId count, then it means that there are some new holdouts that are added in settings and are not present in storage, so set isVariationShownFired to true
+                if ($holdoutCatchupResult['isNetworkCallSent']) {
+                    $isVariationShownFired = true;
+                }
                 
                 // push the updated not in holdout ids to the notInHoldoutIds array
                 $notInHoldoutIds = array_merge($notInHoldoutIds, (array) $updatedNotInHoldoutIds);
@@ -249,6 +288,15 @@ class GetFlag
                 'featureKey' => $featureKey,
             ], $debugEventProps));
 
+            // case: feature not found
+            // If usage tracking is enabled, send usage tracking impression
+            if ($serviceContainer->getSettings()->isTrackingUsageEnabled() && !$isVariationShownFired) {
+                ImpressionUtil::createAndSendImpressionForUsageTracking($serviceContainer->getSettings(), $featureKey, $context, $serviceContainer, $batchPayload);
+            }
+            if(!$serviceContainer->getSettingsService()->isGatewayServiceProvided && !$serviceContainer->getSettingsService()->isProxyUrlProvided && count($batchPayload) > 0) {
+                ImpressionUtil::SendImpressionForVariationShownInBatch($batchPayload, $serviceContainer);
+            }
+
             return new GetFlagResultUtil(false, [], $ruleStatus, $context->getSessionId(), $context->getUUID());
         }
 
@@ -271,6 +319,12 @@ class GetFlag
             $matchedHoldouts = $holdoutResult['matchedHoldouts'];
             $notMatchedHoldouts = $holdoutResult['notMatchedHoldouts'];
             $holdoutPayloads = $holdoutResult['holdoutPayloads'];
+
+            // case: User is in holdout group
+            // set isVariationShownFired to true if any holdout payloads are found
+            if (count($holdoutPayloads) > 0) {
+                $isVariationShownFired = true;
+            }
 
 
             if ($matchedHoldouts !== null && count($matchedHoldouts) > 0) {
@@ -373,7 +427,7 @@ class GetFlag
                             if($payload !== null) {
                                 $batchPayload[] = $payload;
                             }
-                        }   
+                        }
                     }
 
                     $evaluatedFeatureMap[$featureKey] = [
@@ -421,6 +475,10 @@ class GetFlag
                             }
                         }
                     }
+
+                    // case: rollout rule passed traffic evaluation
+                    // set isVariationShownFired to true ONLY after traffic confirms a valid variation
+                    $isVariationShownFired = true;
                 }
             }
         } else if (count($rollOutRules) === 0) {
@@ -454,6 +512,10 @@ class GetFlag
                         $isEnabled = true;
                         $decision['isUserPartOfCampaign'] = true;
                         $payload = $evaluateRuleResult['payload'];
+                        
+                        // case: User passed whitelisted experiment rule
+                        // set isVariationShownFired to true
+                        $isVariationShownFired = true;
                         if(($serviceContainer->getSettingsService()->isGatewayServiceProvided || $serviceContainer->getSettingsService()->isProxyUrlProvided) && $payload !== null) {
                             ImpressionUtil::SendImpressionForVariationShown($serviceContainer, $payload, $context, $featureKey);
                         } else {
@@ -487,6 +549,10 @@ class GetFlag
                     $experimentVariationToReturn = $variation;
 
                     $this->updateIntegrationsDecisionObject($campaign, $variation, $passedRulesInformation, $decision);
+                    
+                    // case: User passed experiment rule
+                    // set isVariationShownFired to true
+                    $isVariationShownFired = true;
 
                     if(!$isDebuggerUsed) {
                          // Construct payload data for tracking the user
@@ -562,7 +628,7 @@ class GetFlag
        }
 
         // Send data for Impact Campaign, if defined
-        if ($feature->getImpactCampaign()->getCampaignId()) {
+        if ($feature->getImpactCampaign() && $feature->getImpactCampaign()->getCampaignId()) {
             $status = $isEnabled ? 'enabled' : 'disabled';
             $logManager->info(sprintf(
                 "Tracking feature: %s being %s for Impact Analysis Campaign for the user %s",
@@ -583,10 +649,16 @@ class GetFlag
                 );
 
                 if(($serviceContainer->getSettingsService()->isGatewayServiceProvided || $serviceContainer->getSettingsService()->isProxyUrlProvided) && $payload !== null) {
+                    // case: Impact Analysis impression sent
+                    // set isVariationShownFired to true as the impact analysis impression is sent.
+                    $isVariationShownFired = true;
                     ImpressionUtil::SendImpressionForVariationShown($serviceContainer, $payload, $context, $featureKey);
                 } else {
                     //push this payload to the batch payload
                     if($payload !== null) {
+                        // case: Impact Analysis impression sent
+                        // set isVariationShownFired to true as the impact analysis impression is sent.
+                        $isVariationShownFired = true;
                         $batchPayload[] = $payload;
                     }
                 }
@@ -601,7 +673,13 @@ class GetFlag
             $variablesForEvaluatedFlag = $rolloutVariationToReturn->getVariables();
         }
         
-        if(!$serviceContainer->getSettingsService()->isGatewayServiceProvided && !$serviceContainer->getSettingsService()->isProxyUrlProvided) {
+        // Send usage tracking call when no primary variationShown event was dispatched.
+        // If a primary event was fired, the server already has the usage tracking signal.
+        if ($serviceContainer->getSettings()->isTrackingUsageEnabled() && !$isVariationShownFired) {
+            ImpressionUtil::createAndSendImpressionForUsageTracking($serviceContainer->getSettings(), $featureKey, $context, $serviceContainer, $batchPayload);
+        }
+
+        if(!$serviceContainer->getSettingsService()->isGatewayServiceProvided && !$serviceContainer->getSettingsService()->isProxyUrlProvided && count($batchPayload) > 0) {
             ImpressionUtil::SendImpressionForVariationShownInBatch($batchPayload, $serviceContainer);
         }
     

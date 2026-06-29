@@ -206,7 +206,7 @@ class HoldoutUtil
      * @param ContextModel $context
      * @param array|null $storedData Key: notInHoldoutId (array of ids)
      * @param StorageService $storageService
-     * @return void
+     * @return array Containing 'updatedNotInHoldoutIds' and 'isNetworkCallSent' bool flag
      */
     public static function sendNetworkCallsForNotInHoldouts(
         ServiceContainer $serviceContainer,
@@ -264,7 +264,9 @@ class HoldoutUtil
             }
         }
 
+        $isNetworkCallSent = false;
         if (count($updatedNotInHoldoutIds) > $initialNotInHoldoutCount) {
+            $isNetworkCallSent = true;
             // set data in storage
             (new StorageDecorator())->setDataInStorage(
                 [
@@ -281,5 +283,10 @@ class HoldoutUtil
             // send impression for variation shown in batch
             ImpressionUtil::SendImpressionForVariationShownInBatch($batchPayload, $serviceContainer);
         }
+
+        return [
+            'updatedNotInHoldoutIds' => $updatedNotInHoldoutIds,
+            'isNetworkCallSent' => $isNetworkCallSent
+        ];
     }
 }

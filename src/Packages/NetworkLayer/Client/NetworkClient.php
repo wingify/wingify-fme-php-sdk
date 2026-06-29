@@ -181,13 +181,17 @@ class NetworkClient implements NetworkClientInterface
     {
         $parsedUrl = parse_url($url);
         $host = $parsedUrl['host'];
-        $port = isset($parsedUrl['port']) ? $parsedUrl['port'] : 443;
-        $path = isset($parsedUrl['path']) ? $parsedUrl['path'] : '/';
-        $query = isset($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '';
-
-        // For HTTPS, we need to use ssl:// prefix
+        // Determine the URL scheme (default to https) to support both secure external servers and unencrypted local gateways/proxies.
+        $scheme = isset($parsedUrl['scheme']) ? strtolower($parsedUrl['scheme']) : 'https';
+        $isHttps = $scheme === 'https';
+        
+        // Dynamically assign the correct default port based on the scheme if none is provided.
+        $port = isset($parsedUrl['port']) ? $parsedUrl['port'] : ($isHttps ? 443 : 80);
+        
+        // Append the ssl:// prefix ONLY for https connections. HTTP connections will use a standard TCP socket.
+        $prefix = $isHttps ? 'ssl://' : '';
         $socket = fsockopen(
-            "ssl://{$host}",
+            "{$prefix}{$host}",
             $port,
             $errno,
             $errstr,
@@ -215,7 +219,10 @@ class NetworkClient implements NetworkClientInterface
         if ($originalUrl) {
             $parsedUrl = parse_url($originalUrl);
             $host = $parsedUrl['host'];
-            if (isset($parsedUrl['port']) && $parsedUrl['port'] != 443) {
+            $scheme = isset($parsedUrl['scheme']) ? strtolower($parsedUrl['scheme']) : 'https';
+            $isHttps = $scheme === 'https';
+            $defaultPort = $isHttps ? 443 : 80;
+            if (isset($parsedUrl['port']) && $parsedUrl['port'] != $defaultPort) {
                 $host .= ':' . $parsedUrl['port'];
             }
         }
@@ -334,7 +341,6 @@ class NetworkClient implements NetworkClientInterface
     {
         $networkOptions = $request->getOptions();
         $responseModel = new ResponseModel();
-
         // NetworkManager ensures retryConfig is set and validated in options
         $retryConfig = $request->getRetryConfig();
 

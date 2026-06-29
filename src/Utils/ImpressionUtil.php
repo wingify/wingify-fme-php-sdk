@@ -266,5 +266,47 @@ class ImpressionUtil
         ]);
         return ['status' => 'error', 'events' => $payload];
     }
+    /**
+     * Creates and dispatches an impression for tracking usage.
+     * Depending on the network configuration, it either dispatches the call immediately
+     * or appends it to the batch payload array.
+     *
+     * @param SettingsModel $settings The settings model.
+     * @param string $featureKey The feature key.
+     * @param ContextModel $context The user context model.
+     * @param ServiceContainer $serviceContainer The service container.
+     * @param array &$batchPayload Reference to the batch payload array.
+     */
+    public static function createAndSendImpressionForUsageTracking(
+        SettingsModel $settings,
+        $featureKey,
+        ContextModel $context,
+        ServiceContainer $serviceContainer,
+        &$batchPayload
+    ) {
+        $networkUtil = new NetworkUtil($serviceContainer);
+
+        $properties = $networkUtil->getEventsBaseProperties(
+            EventEnum::TRACK_USAGE,
+            $context->getUserAgent(),
+            $context->getIpAddress()
+        );
+
+        $payload = $networkUtil->getTrackUsagePayloadData($settings, $context);
+
+        $loggerService = $serviceContainer->getLoggerService();
+
+        $loggerService->info('USAGE_TRACKING_CALL_SENT', [
+            'accountId' => $settings->getAccountId(),
+            'userId' => $context->getId(),
+            'featureKey' => $featureKey
+        ]);
+
+        if ($serviceContainer->getSettingsService()->isGatewayServiceProvided || $serviceContainer->getSettingsService()->isProxyUrlProvided) {
+            $networkUtil->sendPostApiRequest($properties, $payload, $context->getId(), []);
+        } else {
+            $batchPayload[] = $payload;
+        }
+    }
 }
 

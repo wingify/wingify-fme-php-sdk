@@ -341,6 +341,45 @@ class NetworkUtil {
     }
 
   /**
+   * Constructs payload data for tracking MAU usage.
+   *
+   * @param mixed $settings The settings object
+   * @param ContextModel $context The context object
+   * @return array Array containing the track usage payload data
+   */
+  public function getTrackUsagePayloadData($settings, $context) {
+        $properties = $this->getEventBasePayload(
+            $settings,
+            $context->getId(),
+            $context->getSessionId(),
+            EventEnum::TRACK_USAGE,
+            $context->getUserAgent(),
+            $context->getIpAddress(),
+            false,
+            null
+        );
+
+        // Ensure id, variation, and isFirst are unset if they exist
+        if (isset($properties['d']['event']['props']['id'])) {
+            unset($properties['d']['event']['props']['id']);
+        }
+        if (isset($properties['d']['event']['props']['variation'])) {
+            unset($properties['d']['event']['props']['variation']);
+        }
+        if (isset($properties['d']['event']['props']['isFirst'])) {
+            unset($properties['d']['event']['props']['isFirst']);
+        }
+
+        $this->serviceContainer->getLoggerService()->debug('IMPRESSION_FOR_TRACKING_USAGE', [
+            'accountId' => $settings->getAccountId(),
+            'userId' => $context->getId(),
+            'brand' => $this->serviceContainer->getSettingsService()->sdkName
+        ]);
+
+        return $properties;
+    }
+
+  /**
    * Constructs payload data for setting user attributes.
    *
    * @param mixed $settings The settings object

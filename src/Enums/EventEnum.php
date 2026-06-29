@@ -25,4 +25,5 @@ class EventEnum {
     const SDK_INIT = 'vwo_fmeSdkInit';
     const USAGE_STATS = 'vwo_sdkUsageStats';
     const DEBUGGER_EVENT = 'vwo_sdkDebug';
+    const TRACK_USAGE = 'vwo_feTrackUsage';
 }
