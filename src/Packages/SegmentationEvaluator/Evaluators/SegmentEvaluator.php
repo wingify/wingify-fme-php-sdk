@@ -72,6 +72,8 @@ class SegmentEvaluator implements Segmentation
                 return $this->segmentOperandEvaluator->evaluateStringOperandDSL($subDsl, $this->context, SegmentOperatorValueEnum::BROWSER_VERSION);
             case SegmentOperatorValueEnum::OS_VERSION:
                 return $this->segmentOperandEvaluator->evaluateStringOperandDSL($subDsl, $this->context, SegmentOperatorValueEnum::OS_VERSION);
+            case SegmentOperatorValueEnum::WEB_CAMPAIGN_VARIATION:
+                return $this->segmentOperandEvaluator->evaluateCampaignVariationDSL($subDsl, $this->context);
             default:
                 return false;
         }

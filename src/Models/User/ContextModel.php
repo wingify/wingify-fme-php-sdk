@@ -34,6 +34,7 @@ class ContextModel
     private $uuid;
     private $sessionId;
     private $bucketingSeed;
+    private $platformVariables;
 
     public function modelFromDictionary($context)
     {
@@ -41,6 +42,10 @@ class ContextModel
         $this->userAgent = isset($context['userAgent']) ? $context['userAgent'] : null;
         $this->ipAddress = isset($context['ipAddress']) ? $context['ipAddress'] : null;
         $this->bucketingSeed = isset($context['bucketingSeed']) ? $context['bucketingSeed'] : null;
+
+        if (isset($context['platformVariables'])) {
+            $this->platformVariables = $context['platformVariables'];
+        }
 
         if (isset($context['customVariables'])) {
             $this->customVariables = $context['customVariables'];
@@ -145,6 +150,16 @@ class ContextModel
     public function getBucketingSeed()
     {
         return $this->bucketingSeed;
+    }
+
+    public function getPlatformVariables()
+    {
+        return $this->platformVariables;
+    }
+
+    public function setPlatformVariables($platformVariables)
+    {
+        $this->platformVariables = $platformVariables;
     }
 }
 

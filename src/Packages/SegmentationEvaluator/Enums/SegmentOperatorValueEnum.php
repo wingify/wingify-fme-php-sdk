@@ -36,5 +36,6 @@ class SegmentOperatorValueEnum {
     const IP = 'ip_address';
     const BROWSER_VERSION = 'browser_version';
     const OS_VERSION = 'os_version';
+    const WEB_CAMPAIGN_VARIATION = 'campaignVariation';
 }
 ?>

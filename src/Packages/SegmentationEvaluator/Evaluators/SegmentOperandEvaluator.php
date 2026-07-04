@@ -111,6 +111,68 @@ class SegmentOperandEvaluator {
     }
 
     /**
+     * Evaluates Web Testing pre-segmentation against `context.platformVariables.webTestingCampaigns`.
+     * Operand: "C" (in Campaign, any variation), "C_V", "C_!V", "!C" (not in Campaign C).
+     */
+    public function evaluateCampaignVariationDSL($campaignVariationOperand, $context) {
+        // Settings JSON often deserializes campaign ids as numbers; coerce before matching DSL tokens.
+        $operandString = null;
+        if (is_numeric($campaignVariationOperand) && is_finite($campaignVariationOperand)) {
+            $operandString = strval($campaignVariationOperand);
+        } elseif (is_string($campaignVariationOperand)) {
+            $operandString = $campaignVariationOperand;
+        }
+        
+        if ($operandString === null) {
+            $type = strtolower(gettype($campaignVariationOperand));
+            $this->serviceContainer->getLoggerService()->error(
+                'INVALID_WEB_TESTING_CAMPAIGN_VARIATION_OPERAND_TYPE',
+                ['type' => $type, 'an' => ApiEnum::GET_FLAG, 'uuid' => $context->getUUID(), 'sId' => $context->getSessionId()]
+            );
+            return false;
+        }
+
+        // Empty operand is invalid.
+        if (strlen($operandString) === 0) {
+            $this->serviceContainer->getLoggerService()->error(
+                'INVALID_WEB_TESTING_CAMPAIGN_VARIATION_OPERAND_EMPTY',
+                ['an' => ApiEnum::GET_FLAG, 'uuid' => $context->getUUID(), 'sId' => $context->getSessionId()]
+            );
+            return false;
+        }
+
+        $trimmedCampaignVariationOperand = trim($operandString);
+        // All spaces is invalid.
+        if (strlen($trimmedCampaignVariationOperand) === 0) {
+            $this->serviceContainer->getLoggerService()->error(
+                'INVALID_WEB_TESTING_CAMPAIGN_VARIATION_OPERAND_EMPTY',
+                ['an' => ApiEnum::GET_FLAG, 'uuid' => $context->getUUID(), 'sId' => $context->getSessionId()]
+            );
+            return false;
+        }
+
+        // Parse the campaigns from the context.
+        $assignedVariationsByCampaignId = \wingify\Packages\SegmentationEvaluator\Utils\WebTestingSegmentUtil::parseWebTestingCampaignsFromContext($context, $this->serviceContainer);
+        $evaluationResult = \wingify\Packages\SegmentationEvaluator\Utils\WebTestingSegmentUtil::evaluateWebTestingCampaignVariation(
+            $trimmedCampaignVariationOperand,
+            $assignedVariationsByCampaignId
+        );
+        
+        $result = $evaluationResult['result'];
+        $invalidFormat = $evaluationResult['invalidFormat'];
+
+        // Invalid format of the operand.
+        if ($invalidFormat) {
+            $this->serviceContainer->getLoggerService()->error(
+                'INVALID_WEB_TESTING_CAMPAIGN_VARIATION_OPERAND_FORMAT',
+                ['operand' => $trimmedCampaignVariationOperand, 'an' => ApiEnum::GET_FLAG, 'uuid' => $context->getUUID(), 'sId' => $context->getSessionId()]
+            );
+        }
+        
+        return $result;
+    }
+
+    /**
      * Evaluates a given string tag value against a DSL operand value.
      * 
      * @param string $dslOperandValue The DSL operand string (e.g., "contains(\"value\")").
