@@ -24,6 +24,7 @@ use wingify\Utils\LogMessageUtil;
 use wingify\LogMessages;
 use wingify\Enums\DebuggerCategoryEnum;
 use wingify\Utils\DebuggerServiceUtil;
+use wingify\Services\ServiceContainer;
 
 class LoggerService {
     public static $debugMessages = [];
@@ -32,13 +33,17 @@ class LoggerService {
     public static $warningMessages = [];
     public static $traceMessages = [];
     private $logManager;
+    /** Per-instance context so server-side error logs route to the correct account in multi-instance setups. */
+    private $serviceContainer;
     /**
      * Constructor initializes LogManager and loads message files
      * 
      * @param LogManager $logManager
+     * @param ServiceContainer|null $serviceContainer Untyped for PHP 7.0 compat; avoids PHP 8.4 implicit-nullable deprecation.
      */
-    public function __construct($logManager) {
+    public function __construct($logManager, $serviceContainer = null) {
         $this->logManager = $logManager;
+        $this->serviceContainer = $serviceContainer;
 
         // Load the log messages from centralized repository
         $logMessages = LogMessages::get();
@@ -83,7 +88,7 @@ class LoggerService {
                 $message = LogMessageUtil::buildMessage($messageTemplate, $map);
                 $logManager->error($message);
                 if ($shouldLogToServer) {
-                    self::errorLogToServer($key, $map, $message);
+                    $this->errorLogToServer($key, $map, $message);
                 }
                 break; 
         }
@@ -169,7 +174,7 @@ class LoggerService {
      * @param string $template The template of the message.
      * @param array $debugProps The map of the debug props.
      */
-    private static function errorLogToServer($template, $debugProps = [], $message = '')
+    private function errorLogToServer($template, $debugProps = [], $message = '')
     {
         if (getenv('APP_ENV') === 'test') {
             return;
@@ -179,6 +184,7 @@ class LoggerService {
         $debugProps['lt'] = LogLevelEnum::ERROR;
         $debugProps['msg'] = $message;
 
-        DebuggerServiceUtil::sendDebugEvent($debugProps);
+        // Pass instance context so debug events use this instance's accountId/sdkKey, not SettingsService::instance().
+        DebuggerServiceUtil::sendDebugEvent($debugProps, $this->serviceContainer);
     }
 } 

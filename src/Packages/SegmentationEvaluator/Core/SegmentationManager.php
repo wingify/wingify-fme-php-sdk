@@ -52,11 +52,12 @@ class SegmentationManager {
         $settings = $serviceContainer->getSettings();
         $loggerService = $serviceContainer->getLoggerService();
         
-        $this->attachEvaluator(); // Ensure a fresh evaluator instance
+        // Pass serviceContainer into SegmentEvaluator so SegmentOperandEvaluator is also wired.
+        // Previously only $this->evaluator->serviceContainer was set, leaving
+        // segmentOperandEvaluator->serviceContainer null and causing
+        // "Call to a member function getLogManager() on null" during holdout/IP/UA segmentation.
+        $this->attachEvaluator(new SegmentEvaluator($serviceContainer, $context, $feature));
         $this->evaluator->settings = $settings; // Set settings in evaluator
-        $this->evaluator->serviceContainer = $serviceContainer; // Set serviceContainer in evaluator
-        $this->evaluator->context = $context; // Set context in evaluator
-        $this->evaluator->feature = $feature; // Set feature in evaluator
 
         // if both user agent and ip is null then we should not get data from gateway service
         if ($context->getUserAgent() === null && $context->getIpAddress() === null) {

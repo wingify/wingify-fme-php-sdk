@@ -54,7 +54,7 @@ class TrackEvent implements ITrack
      * @param HooksService $hooksService Manager for handling hooks and callbacks.
      * @return array Returns an array indicating the success or failure of the event tracking.
      */
-    public function track(SettingsModel $settings, string $eventName, ContextModel $context, array $eventProperties, HooksService $hooksService, bool $isDebuggerUsed = false, ServiceContainer $serviceContainer = null): array
+    public function track(SettingsModel $settings, string $eventName, ContextModel $context, array $eventProperties, HooksService $hooksService, bool $isDebuggerUsed = false, $serviceContainer = null): array
     {
         if (FunctionUtil::doesEventBelongToAnyFeature($eventName, $settings) || FunctionUtil::doesEventBelongToAnyHoldout($eventName, $settings)) {
             // Create an impression for the track event
@@ -90,7 +90,8 @@ class TrackEvent implements ITrack
      * @param array $eventProperties Properties associated with the event.
      * @param ServiceContainer $serviceContainer The service container (optional).
      */
-    private function createImpressionForTrack(SettingsModel $settings, string $eventName, ContextModel $context, array $eventProperties, ServiceContainer $serviceContainer = null)
+    /** @param ServiceContainer|null $serviceContainer */
+    private function createImpressionForTrack(SettingsModel $settings, string $eventName, ContextModel $context, array $eventProperties, $serviceContainer = null)
     {
         $networkUtil = new NetworkUtil($serviceContainer);
 

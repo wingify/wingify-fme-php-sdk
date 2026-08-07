@@ -116,7 +116,10 @@ class NetworkClient implements NetworkClientInterface
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
-            curl_close($ch);
+            // For PHP < 8.0, $ch is a resource and requires curl_close. For PHP >= 8.0, it's a CurlHandle object and closes automatically.
+            if (is_resource($ch)) {
+                curl_close($ch);
+            }
 
             $responseModel = new ResponseModel($response, $httpCode, $error);
 

@@ -623,8 +623,8 @@ class GetFlag
             // Update debug event props with decision keys
             $this->updateDebugEventPropsWithDecisionKeys($debugEventProps, $decision);
 
-            // Send debug event
-            DebuggerServiceUtil::sendDebugEvent($debugEventProps);
+            // Send debug event scoped to this SDK instance (multi-instance safe).
+            DebuggerServiceUtil::sendDebugEvent($debugEventProps, $serviceContainer);
        }
 
         // Send data for Impact Campaign, if defined

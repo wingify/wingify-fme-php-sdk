@@ -31,7 +31,10 @@ class UserIdUtil
    * @param ServiceContainer|null $serviceContainer
    * @return string
    */
-  public static function getUserId($userId, $isAliasingEnabled, ServiceContainer $serviceContainer = null)
+  /**
+   * @param ServiceContainer|null $serviceContainer Untyped for PHP 7.0 compat; avoids PHP 8.4 implicit-nullable deprecation.
+   */
+  public static function getUserId($userId, $isAliasingEnabled, $serviceContainer = null)
   {
     if ($isAliasingEnabled) {
       $settingsService = $serviceContainer ? $serviceContainer->getSettingsService() : SettingsService::instance();

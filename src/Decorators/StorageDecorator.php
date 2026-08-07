@@ -30,13 +30,16 @@ use wingify\Enums\ApiEnum;
 
 interface IStorageDecorator
 {
-    public function getFeatureFromStorage($featureKey, $context, $storageService, ServiceContainer $serviceContainer = null);
-    public function setDataInStorage($data, $storageService, ServiceContainer $serviceContainer = null);
+    /** @param ServiceContainer|null $serviceContainer */
+    public function getFeatureFromStorage($featureKey, $context, $storageService, $serviceContainer = null);
+    /** @param ServiceContainer|null $serviceContainer */
+    public function setDataInStorage($data, $storageService, $serviceContainer = null);
 }
 
 class StorageDecorator implements IStorageDecorator
 {
-    public function getFeatureFromStorage($featureKey, $context, $storageService, ServiceContainer $serviceContainer = null)
+    /** @param ServiceContainer|null $serviceContainer */
+    public function getFeatureFromStorage($featureKey, $context, $storageService, $serviceContainer = null)
     {
         $campaignMap = $storageService->getDataInStorage($featureKey, $context, $serviceContainer);
 
@@ -58,7 +61,8 @@ class StorageDecorator implements IStorageDecorator
         }
     }
 
-    public function setDataInStorage($data, $storageService, ServiceContainer $serviceContainer = null)
+    /** @param ServiceContainer|null $serviceContainer */
+    public function setDataInStorage($data, $storageService, $serviceContainer = null)
     {
         $featureKey = $data['featureKey'] ?? null;
         $featureId = $data['featureId'] ?? null;

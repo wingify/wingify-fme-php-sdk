@@ -46,7 +46,7 @@ class GatewayServiceUtil {
             $request = new RequestModel(
                 $serviceContainer->getSettingsService()->hostname,
                 'GET',
-                UrlService::getEndpointWithCollectionPrefix($endpoint),
+                UrlService::getEndpointWithCollectionPrefix($endpoint, true, $serviceContainer->getSettingsService()->collectionPrefix),
                 $queryParams,
                 null,
                 null,
@@ -61,7 +61,8 @@ class GatewayServiceUtil {
             } else {
                 $serviceContainer->getLoggerService()->error('ERROR_SETTING_SEGMENTATION_CONTEXT', [
                     'an' => ApiEnum::GET_FLAG,
-                    'uuid' => $context->getId(),
+                    // vwo_sdkDebug visId must be the derived UUID, not the raw userId.
+                    'uuid' => $context->getUUID(),
                     'sId' => $context->getSessionId()
                 ], false);
                 return false;
@@ -69,7 +70,8 @@ class GatewayServiceUtil {
         } catch (\Exception $err) {
             $serviceContainer->getLoggerService()->error('ERROR_SETTING_SEGMENTATION_CONTEXT', [
                 'an' => ApiEnum::GET_FLAG,
-                'uuid' => $context->getId(),
+                // vwo_sdkDebug visId must be the derived UUID, not the raw userId.
+                'uuid' => $context->getUUID(),
                 'sId' => $context->getSessionId()
             ], false);
             return false;

@@ -60,7 +60,8 @@ class ImpressionUtil
 
         $properties = $networkUtil->getEventsBaseProperties(
             EventEnum::VARIATION_SHOWN,
-            urlencode($context->getUserAgent()), // Encode user agent to ensure URL safety
+            // Query encoding is handled centrally in RequestModel::getOptions().
+            $context->getUserAgent(),
             $context->getIpAddress()
         );
 
@@ -132,7 +133,11 @@ class ImpressionUtil
         $request = new RequestModel(
             $settingsService->getEventsHostname(),
             'POST',
-            UrlService::getEndpointWithCollectionPrefix(UrlEnum::BATCH_EVENTS),
+            UrlService::getEndpointWithCollectionPrefix(
+                UrlEnum::BATCH_EVENTS,
+                $settingsService->isGatewayServiceProvided,
+                $settingsService->collectionPrefix
+            ),
             $properties,
             $batchPayload,
             $headers,
@@ -154,7 +159,8 @@ class ImpressionUtil
                 $debugEventProps = NetworkUtil::createNetworkAndRetryDebugEvent($response, $batchPayload, UrlEnum::BATCH_EVENTS, $extraData);
                 $debugEventProps["uuid"] = $request->getUuid();
 
-                DebuggerServiceUtil::sendDebugEvent($debugEventProps);
+                // Route batch retry debug events through the originating instance's account context.
+                DebuggerServiceUtil::sendDebugEvent($debugEventProps, $serviceContainer);
             }
             
             // Handle batch response with comprehensive error handling

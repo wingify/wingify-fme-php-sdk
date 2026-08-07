@@ -31,6 +31,7 @@ use wingify\Services\LoggerService;
 use wingify\Enums\ApiEnum;
 use wingify\Packages\NetworkLayer\Models\ResponseModel;
 use wingify\Utils\DebuggerServiceUtil;
+use wingify\Services\ServiceContainer;
 
 
 interface ISettingsService {
@@ -63,9 +64,16 @@ class SettingsService implements ISettingsService {
     private $logManager;
     public $isProxyUrlProvided = false;
     public $proxyUrl = "";
-    public static $collectionPrefix;
+    public $collectionPrefix;
     public $loggerService;
     public $settings;
+    private $serviceContainer;
+
+    /** Associates this SettingsService with its owning SDK instance for multi-instance debug event routing. */
+    public function setServiceContainer(ServiceContainer $serviceContainer)
+    {
+        $this->serviceContainer = $serviceContainer;
+    }
 
     public function __construct($options, $logManager, $loggerService) {
         $this->logManager = $logManager;
@@ -241,12 +249,17 @@ class SettingsService implements ISettingsService {
         }
 
         $settingsFetchStartTime = microtime(true) * 1000;
+        $settingsEndpoint = UrlService::getEndpointWithCollectionPrefix(
+            Constants::SETTINGS_ENDPOINT,
+            $this->isGatewayServiceProvided,
+            $this->collectionPrefix
+        );
 
         try {
             $request = new RequestModel(
                 $this->getSettingsHostname(),
                 'GET',
-                UrlService::getEndpointWithCollectionPrefix(Constants::SETTINGS_ENDPOINT),
+                $settingsEndpoint,
                 $options,
                 null,
                 null,
@@ -261,10 +274,11 @@ class SettingsService implements ISettingsService {
 
             if($response != null) {
                 if($response->getTotalAttempts() > 0) {
-                    $debugEventProps = NetworkUtil::createNetworkAndRetryDebugEvent($response, null, ApiEnum::INIT, UrlService::getEndpointWithCollectionPrefix(Constants::SETTINGS_ENDPOINT));
+                    $debugEventProps = NetworkUtil::createNetworkAndRetryDebugEvent($response, null, ApiEnum::INIT, $settingsEndpoint);
                     $debugEventProps["uuid"] = $request->getUuid();
 
-                    DebuggerServiceUtil::sendDebugEvent($debugEventProps);
+                    // Route settings-fetch retry debug events through this instance's account context.
+                    DebuggerServiceUtil::sendDebugEvent($debugEventProps, $this->serviceContainer);
                 }
             }
             if($response == null) {
@@ -277,11 +291,12 @@ class SettingsService implements ISettingsService {
                     $response,
                     null,
                     ApiEnum::INIT,
-                    UrlService::getEndpointWithCollectionPrefix(Constants::SETTINGS_ENDPOINT)
+                    $settingsEndpoint
                 );
                 $debugEventProps["uuid"] = $request->getUuid();
 
-                DebuggerServiceUtil::sendDebugEvent($debugEventProps);
+                // Route settings-fetch failure debug events through this instance's account context.
+                DebuggerServiceUtil::sendDebugEvent($debugEventProps, $this->serviceContainer);
             }
 
             return $response->getData();

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] - 2026-08-06
+
+### Fixed
+
+- Fixed several bugs: wrong user ID in debug events, broken tracking URLs with special characters, mixed-up credentials when running multiple SDK instances, failed Gateway requests for some accounts, and PHP 8.4/8.5 deprecation warnings.
+
 ## [2.10.0] - 2026-07-04
 
 ### Added

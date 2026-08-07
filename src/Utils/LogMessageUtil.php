@@ -38,7 +38,9 @@ class LogMessageUtil {
         $message = $template;
         foreach ($map as $key => $value) {
             $placeholder = '{' . $key . '}';
-            $message = str_replace($placeholder, $value, $message);
+            // PHP 8.1+ deprecates null as str_replace replacement (e.g. optional debug props like fk/uuid).
+            $replacement = $value === null ? '' : (is_scalar($value) ? (string) $value : json_encode($value));
+            $message = str_replace($placeholder, $replacement, $message);
         }
 
         return $message;

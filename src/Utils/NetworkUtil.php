@@ -45,7 +45,10 @@ use wingify\Enums\CampaignTypeEnum;
 class NetworkUtil {
   private $serviceContainer;
 
-  public function __construct(ServiceContainer $serviceContainer = null)
+  /**
+   * @param ServiceContainer|null $serviceContainer
+   */
+  public function __construct($serviceContainer = null)
   {
     $this->serviceContainer = $serviceContainer;
   }
@@ -166,7 +169,11 @@ class NetworkUtil {
             $properties['a'] = $usageStatsAccountId;
         }
 
-        $properties['url'] = Constants::HTTPS_PROTOCOL . $settingsService->getEventsHostname() . UrlService::getEndpointWithCollectionPrefix(UrlEnum::EVENTS);
+        $properties['url'] = Constants::HTTPS_PROTOCOL . $settingsService->getEventsHostname() . UrlService::getEndpointWithCollectionPrefix(
+            UrlEnum::EVENTS,
+            $settingsService->isGatewayServiceProvided,
+            $settingsService->collectionPrefix
+        );
         return $properties;
     }
 
@@ -286,7 +293,8 @@ class NetworkUtil {
             else {
                 $this->serviceContainer->getLoggerService()->error('INVALID_USER_AGENT_FOR_STANDARD_ATTRIBUTES', [
                     'an' => ApiEnum::GET_FLAG,
-                    'uuid' => $context->getId(),
+                    // vwo_sdkDebug visId must be the derived UUID, not the raw userId.
+                    'uuid' => $context->getUUID(),
                     'sId' => $context->getSessionId()
                 ]);
             }
@@ -442,11 +450,12 @@ class NetworkUtil {
         $settingsService = $this->serviceContainer ? $this->serviceContainer->getSettingsService() : SettingsService::instance();
         $networkManager = $this->serviceContainer ? $this->serviceContainer->getNetworkManager() : NetworkManager::instance();
         $logManager = $this->serviceContainer->getLogManager();
+        $isGatewayServiceProvided = $settingsService->isGatewayServiceProvided;
 
         $request = new RequestModel(
             $settingsService->getEventsHostname(),
             'POST',
-            UrlService::getEndpointWithCollectionPrefix(UrlEnum::EVENTS),
+            UrlService::getEndpointWithCollectionPrefix(UrlEnum::EVENTS, $isGatewayServiceProvided, $settingsService->collectionPrefix),
             $properties,
             $payload,
             $headers,
@@ -523,9 +532,10 @@ class NetworkUtil {
                 $debugEventProps = NetworkUtil::createNetworkAndRetryDebugEvent($response, $payload, $apiName, $extraDataForMessage);
                 $debugEventProps["uuid"] = $request->getUuid();
 
-                DebuggerServiceUtil::sendDebugEvent($debugEventProps);
+                // Route retry debug events through the originating instance's account context.
+                DebuggerServiceUtil::sendDebugEvent($debugEventProps, $this->serviceContainer);
                 $this->serviceContainer->getLoggerService()->info("NETWORK_CALL_SUCCESS_WITH_RETRIES", [
-                    "extraData" => "POST " . UrlService::getEndpointWithCollectionPrefix(UrlEnum::EVENTS),
+                    "extraData" => "POST " . UrlService::getEndpointWithCollectionPrefix(UrlEnum::EVENTS, $isGatewayServiceProvided, $settingsService->collectionPrefix),
                     "attempts" => $response->getTotalAttempts(),
                     "err" => $response->getError()
                 ]);
@@ -540,7 +550,7 @@ class NetworkUtil {
             if($response->getStatusCode() == 0 && $response->getTotalAttempts() == 0) {
                 $this->serviceContainer->getLoggerService()->info("NETWORK_CALL_SUCCESS", [
                     'event' => $properties['en'],
-                    'endPoint' => UrlService::getEndpointWithCollectionPrefix(UrlEnum::EVENTS),
+                    'endPoint' => UrlService::getEndpointWithCollectionPrefix(UrlEnum::EVENTS, $isGatewayServiceProvided, $settingsService->collectionPrefix),
                     'accountId' => $accountId,
                     'userId' => $userId,
                     'uuid' => $uuid
@@ -556,7 +566,8 @@ class NetworkUtil {
                 $debugEventProps = NetworkUtil::createNetworkAndRetryDebugEvent($responseModel, $payload, $apiName, $extraDataForMessage);
                 $debugEventProps["uuid"] = $request->getUuid();
 
-                DebuggerServiceUtil::sendDebugEvent($debugEventProps);
+                // Route retry debug events through the originating instance's account context.
+                DebuggerServiceUtil::sendDebugEvent($debugEventProps, $this->serviceContainer);
 
                 $this->serviceContainer->getLoggerService()->error("NETWORK_CALL_FAILED", [
                     'method' => 'POST',
@@ -586,7 +597,7 @@ class NetworkUtil {
         $request = new RequestModel(
             $settingsService->hostname,
             'Get',
-            UrlService::getEndpointWithCollectionPrefix($endpoint),
+            UrlService::getEndpointWithCollectionPrefix($endpoint, $settingsService->isGatewayServiceProvided, $settingsService->collectionPrefix),
             $properties,
             null,
             null,
@@ -623,7 +634,9 @@ class NetworkUtil {
      * @return array|false The response data if successful, false otherwise
      */
     public function sendEvent($properties, $payload, $eventName) {
-        $retryConfig = NetworkManager::Instance()->getRetryConfig();
+        // Use the instance NetworkManager so debug/error events respect per-instance retry and routing config.
+        $networkManager = $this->serviceContainer ? $this->serviceContainer->getNetworkManager() : NetworkManager::instance();
+        $retryConfig = $networkManager->getRetryConfig();
 
         if($eventName == EventEnum::ERROR){
             $retryConfig['shouldRetry'] = false;
@@ -632,11 +645,12 @@ class NetworkUtil {
         $baseUrl = $settingsService->getEventsHostname();
         $protocol = $settingsService->protocol ?? Constants::HTTPS_PROTOCOL;
         $port = $settingsService->port ?? null;
+        $isGatewayServiceProvided = $settingsService->isGatewayServiceProvided;
         try {
             $request = new RequestModel(
                 $baseUrl,
                 'POST',
-                UrlService::getEndpointWithCollectionPrefix(UrlEnum::EVENTS),
+                UrlService::getEndpointWithCollectionPrefix(UrlEnum::EVENTS, $isGatewayServiceProvided, $settingsService->collectionPrefix),
                 $properties,
                 $payload,
                 null,
@@ -802,14 +816,15 @@ class NetworkUtil {
 
     /**
      * Constructs the payload for debugger event.
+     * Uses the instance-bound SettingsService (via ServiceContainer) instead of the static singleton.
      *
      * @param array $eventProps The properties for the event
      * @return array The constructed payload
      */
-    public static function getDebuggerEventPayload($eventProps = []) {
-        $uuid = '';
-        $accountId = SettingsService::instance()->accountId;
-        $sdkKey = SettingsService::instance()->sdkKey;
+    public function getDebuggerEventPayload($eventProps = []) {
+        $settingsService = $this->resolveSettingsService();
+        $accountId = $settingsService->accountId;
+        $sdkKey = $settingsService->sdkKey;
         
         if (!isset($eventProps['uuid'])) {
             $uuid = UuidUtil::getUUID($accountId . '_' . $sdkKey, $accountId);
@@ -818,8 +833,7 @@ class NetworkUtil {
             $uuid = $eventProps['uuid'];
         }
 
-        $networkUtil = new NetworkUtil();
-        $properties = $networkUtil->getEventBasePayload(
+        $properties = $this->getEventBasePayload(
             null,
             $uuid,
             FunctionUtil::getCurrentUnixTimestamp(),
@@ -840,7 +854,6 @@ class NetworkUtil {
             $eventProps['sId'] = $properties['d']['sessionId'];
         }
         
-        $settingsService = SettingsService::instance();
         $properties['d']['event']['props']['vwoMeta'] = array_merge($eventProps, [
             'a' => $accountId,
             'product' => Constants::FME,

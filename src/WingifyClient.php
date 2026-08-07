@@ -56,7 +56,10 @@ class WingifyClient implements IWingifyClient {
     private $isAliasingEnabled;
     private $serviceContainer;
 
-    public function __construct(SettingsModel $settings, array $options, ServiceContainer $serviceContainer = null) {
+    /**
+     * @param ServiceContainer|null $serviceContainer Untyped for PHP 7.0 compat; avoids PHP 8.4 implicit-nullable deprecation.
+     */
+    public function __construct(SettingsModel $settings, array $options, $serviceContainer = null) {
         $this->options = $options;
         $this->settings = $settings;
         $this->serviceContainer = $serviceContainer;
@@ -71,6 +74,8 @@ class WingifyClient implements IWingifyClient {
         $proxyUrl = $options['proxy']['url'] ?? null;
         
         $logManager = $this->serviceContainer->getLogManager();
+        // Store on this instance so event/debug URLs do not fall back to UrlService's static prefix.
+        $this->serviceContainer->getSettingsService()->collectionPrefix = $collectionPrefix;
         UrlService::init(compact('collectionPrefix', 'gatewayServiceUrl', 'proxyUrl'));
 
         foreach ($this->settings->getCampaigns() as $campaign) {
@@ -110,7 +115,7 @@ class WingifyClient implements IWingifyClient {
         );
 
         //check if isDebuggerUsed is set in options
-        $isDebuggerUsed = isset($this->options['isDebuggerUsed']);
+        $isDebuggerUsed = !empty($this->options['isDebuggerUsed']);
 
 
         try {
@@ -169,7 +174,7 @@ class WingifyClient implements IWingifyClient {
     public function trackEvent(string $eventName, $context, $eventProperties = []) {
         $apiName = 'trackEvent';
         //check if isDebuggerUsed is set in options
-        $isDebuggerUsed = isset($this->options['isDebuggerUsed']);
+        $isDebuggerUsed = !empty($this->options['isDebuggerUsed']);
 
         try {
             $loggerService = $this->serviceContainer->getLoggerService();
@@ -225,7 +230,7 @@ class WingifyClient implements IWingifyClient {
     public function setAttribute($attributesOrAttributeValue = null, $attributeValueOrContext = null, $context = null) {
 
         $apiName = 'setAttribute';
-        $isDebuggerUsed = isset($this->options['isDebuggerUsed']);
+        $isDebuggerUsed = !empty($this->options['isDebuggerUsed']);
         
         try {
             $loggerService = $this->serviceContainer->getLoggerService();

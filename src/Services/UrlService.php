@@ -69,13 +69,23 @@ class UrlService
     /**
     * Retrieves the endpoint with collection prefix.
     *
-    * @param string $endpoint The endpoint path (e.g., "/batch")
+    * @param string $endpoint The endpoint path (e.g., "/events/t")
+    * @param bool $isGatewayServiceProvided When true, return endpoint as-is (gateway handles routing).
+    * @param string|null $collectionPrefix Instance-scoped prefix (e.g. from SettingsService::$collectionPrefix).
     * @return string The endpoint prefixed with the collection prefix if set; otherwise, the original endpoint.
     */
-    public static function getEndpointWithCollectionPrefix(string $endpoint): string
+    public static function getEndpointWithCollectionPrefix(string $endpoint, $isGatewayServiceProvided = false, $collectionPrefix = null): string
     {
-        if (!empty(self::$collectionPrefix)) {
-            return '/' . ltrim(self::$collectionPrefix, '/') . $endpoint;
+        if ($isGatewayServiceProvided) {
+            return $endpoint;
+        }
+
+        // When the 3rd arg is passed (even as null), use it — never fall back to the process-wide
+        // static, or a null/empty instance prefix would leak another instance's region (e.g. eu01).
+        $prefix = func_num_args() >= 3 ? $collectionPrefix : self::$collectionPrefix;
+
+        if (!empty($prefix)) {
+            return '/' . ltrim($prefix, '/') . $endpoint;
         }
         return $endpoint;
     }

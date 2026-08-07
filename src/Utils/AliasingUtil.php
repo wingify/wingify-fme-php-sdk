@@ -39,7 +39,10 @@ class AliasingUtil
    * @param ServiceContainer|null $serviceContainer
    * @return mixed Returns response data array/object on success, or false on failure
    */
-  public static function getAlias($userId, ServiceContainer $serviceContainer = null)
+  /**
+   * @param ServiceContainer|null $serviceContainer Untyped for PHP 7.0 compat; avoids PHP 8.4 implicit-nullable deprecation.
+   */
+  public static function getAlias($userId, $serviceContainer = null)
   {
     try {
       $settingsService = $serviceContainer ? $serviceContainer->getSettingsService() : SettingsService::instance();
@@ -96,7 +99,10 @@ class AliasingUtil
    * @param ServiceContainer|null $serviceContainer
    * @return mixed Returns response data array/object on success, or false on failure
    */
-  public static function setAlias($userId, $aliasId, ServiceContainer $serviceContainer = null)
+  /**
+   * @param ServiceContainer|null $serviceContainer Untyped for PHP 7.0 compat; avoids PHP 8.4 implicit-nullable deprecation.
+   */
+  public static function setAlias($userId, $aliasId, $serviceContainer = null)
   {
     try {
       $settingsService = $serviceContainer ? $serviceContainer->getSettingsService() : SettingsService::instance();

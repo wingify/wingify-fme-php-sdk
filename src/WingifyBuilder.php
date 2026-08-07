@@ -32,6 +32,7 @@ use wingify\Utils\UsageStatsUtil;
 use wingify\Utils\LogPrefixUtil;
 use wingify\Services\LoggerService;
 use wingify\Services\ServiceContainer;
+use wingify\Services\UrlService;
 
 interface IWingifyBuilder
 {
@@ -174,7 +175,15 @@ class WingifyBuilder implements IWingifyBuilder
 
     public function setSettingsService()
     {
+        // Reset UrlService static prefix before fetch so a prior instance's region prefix
+        // (e.g. "eu01") cannot leak into this instance's settings request.
+        UrlService::init([
+            'gatewayServiceUrl' => $this->options['gatewayService']['url'] ?? null,
+        ]);
+
         $this->settingFileManager = new SettingsService($this->options, $this->logManager, $this->loggerService);
+        // Wire instance context so settings-fetch debug events target the correct account.
+        $this->settingFileManager->setServiceContainer($this->serviceContainer);
         $this->serviceContainer->setSettingsService($this->settingFileManager);
         return $this;
     }
@@ -188,7 +197,8 @@ class WingifyBuilder implements IWingifyBuilder
     {
         try {
             $this->logManager = new LogManager(LogPrefixUtil::buildLoggerConfig($this->options));
-            $this->loggerService = new LoggerService($this->logManager);
+            // Pass ServiceContainer so server-side error logs stay scoped to this SDK instance.
+            $this->loggerService = new LoggerService($this->logManager, $this->serviceContainer);
             
             $this->serviceContainer->setLogManager($this->logManager);
             $this->serviceContainer->setLoggerService($this->loggerService);

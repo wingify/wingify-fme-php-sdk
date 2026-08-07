@@ -146,7 +146,11 @@ class RequestModel {
     public function getOptions() {
         $queryParams = '';
         foreach ($this->query as $key => $value) {
-            $queryParams .= "{$key}={$value}&";
+            if ($value === null) {
+                continue;
+            }
+            // Encode query values (e.g. visitor_ua) so special characters do not break trackEvent/setAttribute URLs.
+            $queryParams .= rawurlencode((string) $key) . '=' . rawurlencode((string) $value) . '&';
         }
         $queryParams = rtrim($queryParams, '&');
 

@@ -128,7 +128,8 @@ class SegmentEvaluator implements Segmentation
                             $this->serviceContainer->getLoggerService()->error('FEATURE_NOT_FOUND_WITH_ID', [
                                 'featureId' => $feature->getKey(), 
                                 'an' => ApiEnum::GET_FLAG,
-                                'uuid' => $this->context->getId(),
+                                // vwo_sdkDebug visId must be the derived UUID, not the raw userId.
+                                'uuid' => $this->context->getUUID(),
                                 'sId' => $this->context->getSessionId()
                             ]);
                             return false;
@@ -145,7 +146,8 @@ class SegmentEvaluator implements Segmentation
                     $this->serviceContainer->getLoggerService()->error('USER_AGENT_VALIDATION_ERROR', [
                         'error' => $err->getMessage(),
                         'an' => ApiEnum::GET_FLAG,
-                        'uuid' => $this->context->getId(),
+                        // vwo_sdkDebug visId must be the derived UUID, not the raw userId.
+                        'uuid' => $this->context->getUUID(),
                         'sId' => $this->context->getSessionId()
                     ]);
                 }

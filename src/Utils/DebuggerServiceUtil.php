@@ -20,8 +20,7 @@ namespace wingify\Utils;
 
 use wingify\Enums\EventEnum;
 use wingify\Utils\NetworkUtil;
-use wingify\Services\SettingsService;
-use wingify\Constants\Constants;
+use wingify\Services\ServiceContainer;
 
 class DebuggerServiceUtil {
 
@@ -57,11 +56,13 @@ class DebuggerServiceUtil {
      * Sends a debug event to the FME platform.
      *
      * @param array $eventProps The properties for the event.
+     * @param ServiceContainer|null $serviceContainer Untyped for PHP 7.0 compat; avoids PHP 8.4 implicit-nullable deprecation.
      * @return void
      */
-    public static function sendDebugEvent($eventProps = [])
+    public static function sendDebugEvent($eventProps = [], $serviceContainer = null)
     {
-        $networkUtil = new NetworkUtil();
+        // NetworkUtil must receive the caller's ServiceContainer to avoid SettingsService singleton bleed across instances.
+        $networkUtil = new NetworkUtil($serviceContainer);
 
         $properties = $networkUtil->getEventsBaseProperties(EventEnum::DEBUGGER_EVENT, null, null);
         $payload = $networkUtil->getDebuggerEventPayload($eventProps);
@@ -71,9 +72,9 @@ class DebuggerServiceUtil {
     /**
      * @deprecated Use sendDebugEvent() instead.
      */
-    public static function sendDebugEventToWingify($eventProps = [])
+    public static function sendDebugEventToWingify($eventProps = [], $serviceContainer = null)
     {
-        self::sendDebugEvent($eventProps);
+        self::sendDebugEvent($eventProps, $serviceContainer);
     }
 }
 
