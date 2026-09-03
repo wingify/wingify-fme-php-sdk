@@ -31,6 +31,7 @@ use wingify\Services\LoggerService;
 use wingify\Enums\ApiEnum;
 use wingify\Packages\NetworkLayer\Models\ResponseModel;
 use wingify\Utils\DebuggerServiceUtil;
+use wingify\Models\SettingsModel;
 use wingify\Services\ServiceContainer;
 
 
@@ -75,9 +76,14 @@ class SettingsService implements ISettingsService {
         $this->serviceContainer = $serviceContainer;
     }
 
+    // Applies sampling rules for init, usage-stats, and debug internal events.
+    private $internalEventsSamplingService;
+    private $processedSettings;
+
     public function __construct($options, $logManager, $loggerService) {
         $this->logManager = $logManager;
         $this->loggerService = $loggerService;
+        $this->internalEventsSamplingService = new InternalEventsSamplingService();
         $this->sdkKey = $options['sdkKey'];
         $this->accountId = $options['accountId'];
         $this->expiry = isset($options['settingsConfig']['expiry']) ? $options['settingsConfig']['expiry'] : Constants::SETTINGS_EXPIRY;
@@ -315,6 +321,36 @@ class SettingsService implements ISettingsService {
         } else {
             return $this->fetchSettingsAndCacheInStorage();
         }
+    }
+
+    /**
+     * Returns the parsed settings used for internal event sampling decisions.
+     *
+     * @return SettingsModel|null Parsed settings from the last successful fetch or update
+     */
+    public function getProcessedSettings()
+    {
+        return $this->processedSettings;
+    }
+
+    /**
+     * Stores the parsed settings for sampling configuration lookups.
+     *
+     * @param SettingsModel|null $processedSettings Parsed settings from the server
+     */
+    public function setProcessedSettings($processedSettings)
+    {
+        $this->processedSettings = $processedSettings;
+    }
+
+    /**
+     * Returns the service that applies internal SDK event sampling rules.
+     *
+     * @return InternalEventsSamplingService Internal events sampling service instance
+     */
+    public function getInternalEventsSamplingService()
+    {
+        return $this->internalEventsSamplingService;
     }
 
 }

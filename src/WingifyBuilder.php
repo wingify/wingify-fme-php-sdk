@@ -124,6 +124,8 @@ class WingifyBuilder implements IWingifyBuilder
 
             // Sync settings to container
             $this->serviceContainer->setSettings($this->settings);
+            // Keep parsed settings in sync for sampling lookups (e.g. for sampled debug events)
+            $this->settingFileManager->setProcessedSettings($this->settings);
 
             return $this->settings;
         } catch (\Exception $error) {
@@ -143,6 +145,10 @@ class WingifyBuilder implements IWingifyBuilder
         $this->settingsSetManually = true;
         
         $this->serviceContainer->setSettings($this->settings);
+        // Keep parsed settings in sync for sampling lookups (e.g. for sampled debug events)
+        if ($this->settingFileManager !== null) {
+            $this->settingFileManager->setProcessedSettings($this->settings);
+        }
     }
 
     public function getSettings($force = false)
@@ -185,6 +191,10 @@ class WingifyBuilder implements IWingifyBuilder
         // Wire instance context so settings-fetch debug events target the correct account.
         $this->settingFileManager->setServiceContainer($this->serviceContainer);
         $this->serviceContainer->setSettingsService($this->settingFileManager);
+        // Connect settings service to logger for sampled debug events
+        if ($this->loggerService !== null) {
+            $this->loggerService->setSettingsService($this->settingFileManager);
+        }
         return $this;
     }
 

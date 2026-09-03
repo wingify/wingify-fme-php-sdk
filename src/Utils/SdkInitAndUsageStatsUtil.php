@@ -52,6 +52,17 @@ class SdkInitAndUsageStatsUtil
      */
     public static function sendSDKUsageStatsEvent($usageStatsAccountId, $serviceContainer = null)
     {
+        if ($serviceContainer !== null) {
+            $settingsService = $serviceContainer->getSettingsService();
+            $processedSettings = $settingsService->getProcessedSettings();
+
+            // Apply usage-stats sampling before send (mirrors Java WingifyClient.sendSdkInitAndUsageStatsEvent)
+            if ($processedSettings !== null
+                && !$settingsService->getInternalEventsSamplingService()->shouldSendUsageStatsEvent($processedSettings)) {
+                return;
+            }
+        }
+
         $networkUtil = new NetworkUtil($serviceContainer);
         try {
             // create the query parameters

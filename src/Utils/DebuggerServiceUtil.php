@@ -21,6 +21,7 @@ namespace wingify\Utils;
 use wingify\Enums\EventEnum;
 use wingify\Utils\NetworkUtil;
 use wingify\Services\ServiceContainer;
+use wingify\Utils\InternalEventsSamplingUtil;
 
 class DebuggerServiceUtil {
 
@@ -53,14 +54,30 @@ class DebuggerServiceUtil {
     }
 
     /**
-     * Sends a debug event to the FME platform.
+     * Sends a debug event to the FME platform, applying sampling for high-volume error template keys.
      *
-     * @param array $eventProps The properties for the event.
+     * @param array $eventProps The properties for the event, including msg_t
      * @param ServiceContainer|null $serviceContainer Untyped for PHP 7.0 compat; avoids PHP 8.4 implicit-nullable deprecation.
      * @return void
      */
     public static function sendDebugEvent($eventProps = [], $serviceContainer = null)
     {
+        $safeEventProps = $eventProps !== null ? $eventProps : [];
+        $messageTemplateKey = isset($safeEventProps['msg_t']) ? $safeEventProps['msg_t'] : null;
+
+        // Sampled keys: apply sampling only when alwaysApplySampling.server is true; others are ALWAYS_SEND
+        $isSampledDebugEvent = is_string($messageTemplateKey)
+            && InternalEventsSamplingUtil::isSampledDebugErrorTemplateKey($messageTemplateKey);
+
+        if ($isSampledDebugEvent && $serviceContainer !== null) {
+            $settingsService = $serviceContainer->getSettingsService();
+            if ($settingsService !== null
+                && !$settingsService->getInternalEventsSamplingService()
+                    ->shouldSendSampledDebugEvent($settingsService->getProcessedSettings())) {
+                return;
+            }
+        }
+
         // NetworkUtil must receive the caller's ServiceContainer to avoid SettingsService singleton bleed across instances.
         $networkUtil = new NetworkUtil($serviceContainer);
 
@@ -77,4 +94,3 @@ class DebuggerServiceUtil {
         self::sendDebugEvent($eventProps, $serviceContainer);
     }
 }
-

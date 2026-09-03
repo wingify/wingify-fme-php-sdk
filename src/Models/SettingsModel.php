@@ -35,6 +35,8 @@ class SettingsModel {
   private $isWebConnectivityEnabled;
   private $holdouts = [];
   private $isTrackingUsageEnabled = false;
+  private $sampling;
+  private $alwaysApplySampling;
 
   public function __construct($settings) {
     if (!$settings) {
@@ -76,6 +78,10 @@ class SettingsModel {
     } else {
         $this->isTrackingUsageEnabled = isset($settings->isMAU) ? $settings->isMAU : false;
     }
+
+    // Internal event sampling config from DaCDN settings
+    $this->sampling = isset($settings->sampling) ? $settings->sampling : null;
+    $this->alwaysApplySampling = isset($settings->alwaysApplySampling) ? $settings->alwaysApplySampling : null;
   }
 
   public function getFeatures() {
@@ -120,6 +126,24 @@ class SettingsModel {
 
   public function isTrackingUsageEnabled() {
     return $this->isTrackingUsageEnabled;
+  }
+
+  /**
+   * Returns the sampling configuration grouped by event category (usage, debug).
+   *
+   * @return object|null Parsed sampling object from settings
+   */
+  public function getSampling() {
+    return $this->sampling;
+  }
+
+  /**
+   * Returns the alwaysApplySampling flags per platform/runtime.
+   *
+   * @return object|null Parsed alwaysApplySampling object from settings
+   */
+  public function getAlwaysApplySampling() {
+    return $this->alwaysApplySampling;
   }
   
   public function toArray(): array {

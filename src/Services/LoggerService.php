@@ -24,6 +24,7 @@ use wingify\Utils\LogMessageUtil;
 use wingify\LogMessages;
 use wingify\Enums\DebuggerCategoryEnum;
 use wingify\Utils\DebuggerServiceUtil;
+use wingify\Services\SettingsService;
 use wingify\Services\ServiceContainer;
 
 class LoggerService {
@@ -33,6 +34,8 @@ class LoggerService {
     public static $warningMessages = [];
     public static $traceMessages = [];
     private $logManager;
+    /** @var SettingsService|null Settings service for sampled debug event routing */
+    private $settingsService;
     /** Per-instance context so server-side error logs route to the correct account in multi-instance setups. */
     private $serviceContainer;
     /**
@@ -53,6 +56,16 @@ class LoggerService {
         self::$errorMessages = $logMessages['errorLogsV2'] ?? [];
         self::$warningMessages = $logMessages['warnLogs'] ?? [];
         self::$traceMessages = $logMessages['traceLogs'] ?? [];
+    }
+
+    /**
+     * Sets the settings service used for internal event sampling on debug sends.
+     *
+     * @param SettingsService $settingsService The settings service instance
+     */
+    public function setSettingsService(SettingsService $settingsService)
+    {
+        $this->settingsService = $settingsService;
     }
 
     /**
@@ -173,6 +186,7 @@ class LoggerService {
      *
      * @param string $template The template of the message.
      * @param array $debugProps The map of the debug props.
+     * @param string $message The formatted error message.
      */
     private function errorLogToServer($template, $debugProps = [], $message = '')
     {
@@ -184,7 +198,7 @@ class LoggerService {
         $debugProps['lt'] = LogLevelEnum::ERROR;
         $debugProps['msg'] = $message;
 
-        // Pass instance context so debug events use this instance's accountId/sdkKey, not SettingsService::instance().
+        // Pass instance context so debug events use this instance's accountId/sdkKey, with sampling applied for high-volume keys.
         DebuggerServiceUtil::sendDebugEvent($debugProps, $this->serviceContainer);
     }
 } 

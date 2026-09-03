@@ -49,7 +49,7 @@ class Constants {
     const DEFAULT_EVENTS_PER_REQUEST = 100;
     const SDK_NAME = 'wingify-fme-php-sdk';
 
-    const SDK_VERSION = '2.11.0';
+    const SDK_VERSION = '2.12.0';
     const AP = 'server';
 
     const SETTINGS = 'settings';
@@ -99,6 +99,10 @@ class Constants {
     // Holdout variation constants (variationId in holdout impression payload)
     const VARIATION_IS_PART_OF_HOLDOUT = 1;
     const VARIATION_NOT_PART_OF_HOLDOUT = 2;
+
+    // Internal events sampling — server runtime defaults
+    const INTERNAL_EVENTS_DEFAULT_SAMPLING_PERCENT_SERVER = 10;
+    const INTERNAL_EVENTS_DEFAULT_ALWAYS_APPLY_SAMPLING = false;
 }
 
 ?>
