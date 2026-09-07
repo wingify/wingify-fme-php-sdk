@@ -35,7 +35,7 @@ class InternalEventsSamplingService
      *
      * @param callable|null $randomValueProvider Supplier returning a value in [0, 1)
      */
-    public function __construct(?callable $randomValueProvider = null)
+    public function __construct(callable $randomValueProvider = null)
     {
         $this->randomValueProvider = $randomValueProvider ?? function () {
             return lcg_value();

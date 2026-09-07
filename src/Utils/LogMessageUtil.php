@@ -30,16 +30,20 @@ class LogMessageUtil {
      * @return string The formatted message
      */
     public static function buildMessage($template, $map = []) {
+        $settingsInstance = SettingsService::instance();
         $map = array_merge(
             $map,
-            LogPrefixUtil::resolveBrandDisplayName(SettingsService::instance()->getHostProfile())
+            LogPrefixUtil::resolveBrandDisplayName($settingsInstance ? $settingsInstance->getHostProfile() : null)
         );
 
         $message = $template;
         foreach ($map as $key => $value) {
             $placeholder = '{' . $key . '}';
-            // PHP 8.1+ deprecates null as str_replace replacement (e.g. optional debug props like fk/uuid).
-            $replacement = $value === null ? '' : (is_scalar($value) ? (string) $value : json_encode($value));
+            if ($value instanceof \Throwable) {
+                $replacement = $value->getMessage();
+            } else {
+                $replacement = $value === null ? '' : (is_scalar($value) ? (string) $value : json_encode($value));
+            }
             $message = str_replace($placeholder, $replacement, $message);
         }
 

@@ -27,7 +27,7 @@ class TrackEventTest extends TestCase
 {
     protected $options;
 
-    protected function setUp(): void
+    protected function setUp()
     {
         $wingifyBuilder = new WingifyBuilder([
             'accountId' => '123456',

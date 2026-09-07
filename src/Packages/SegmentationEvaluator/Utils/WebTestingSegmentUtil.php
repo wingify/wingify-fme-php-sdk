@@ -52,7 +52,7 @@ class WebTestingSegmentUtil {
     public static function parseWebTestingCampaignsFromContext(
         ContextModel $context,
         ServiceContainer $serviceContainer
-    ): ?array {
+    ) {
         $platformVariables = $context->getPlatformVariables();
         $webTestingCampaignsInput = null;
         if (is_array($platformVariables) && isset($platformVariables['webTestingCampaigns'])) {
@@ -138,9 +138,9 @@ class WebTestingSegmentUtil {
      * - "C" (digits only) — user is in campaign C (any variation)
      */
     public static function evaluateWebTestingCampaignVariation(
-        string $campaignVariationOperand,
-        ?array $assignedVariationsByCampaignId
-    ): array {
+        $campaignVariationOperand,
+        $assignedVariationsByCampaignId = null
+    ) {
         // Null means empty assignments map.
         $assignments = $assignedVariationsByCampaignId ?? [];
 

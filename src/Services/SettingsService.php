@@ -213,7 +213,7 @@ class SettingsService implements ISettingsService {
         $this->networkManager = $networkManager;
     }
 
-    public static function instance(): SettingsService {
+    public static function instance() {
         return self::$instance;
     }
 

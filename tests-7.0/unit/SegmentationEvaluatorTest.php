@@ -27,7 +27,7 @@ class SegmentationEvaluatorTest extends TestCase
     protected $testsData;
     protected $settings;
 
-    protected function setUp(): void
+    protected function setUp()
     {
         // Initialize data
         $data = SettingsAndTestCases::get();
