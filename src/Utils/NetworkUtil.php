@@ -163,9 +163,8 @@ class NetworkUtil {
         if (!empty($ipAddress) && $ipAddress !== null) {
             $properties['visitor_ip'] = $ipAddress;
         }
-        if(!$isUsageStatsEvent){
-            $properties['env'] = $sdkKey;
-        } else {
+        $properties['env'] = $sdkKey;
+        if ($isUsageStatsEvent) {
             $properties['a'] = $usageStatsAccountId;
         }
 
@@ -684,11 +683,9 @@ class NetworkUtil {
      * Constructs the payload for SDK init called event.
      *
      * @param string $eventName The name of the event
-     * @param int|null $settingsFetchTime Time taken to fetch settings in milliseconds
-     * @param int|null $sdkInitTime Time taken to initialize the SDK in milliseconds
      * @return array The constructed payload with required fields
      */
-    public function getSdkInitEventPayload($eventName, $settingsFetchTime = null, $sdkInitTime = null)
+    public function getSdkInitEventPayload($eventName)
     {
         $settingsService = $this->serviceContainer ? $this->serviceContainer->getSettingsService() : SettingsService::instance();
         $userId = $settingsService->accountId . '_' . $settingsService->sdkKey;
@@ -697,14 +694,9 @@ class NetworkUtil {
         // Set the required fields as specified
         $properties['d']['event']['props'][Constants::FS_ENVIRONMENT_EVENT_PROP] = $settingsService->sdkKey;
         $properties['d']['event']['props'][Constants::PRODUCT] = Constants::FME;
-        
-
-        $data = [
+        $properties['d']['event']['props']['data'] = [
             'isSDKInitialized' => true,
-            'settingsFetchTime' => $settingsFetchTime,
-            'sdkInitTime' => $sdkInitTime,
         ];
-        $properties['d']['event']['props']['data'] = $data;
 
         return $properties;
     }
@@ -714,10 +706,18 @@ class NetworkUtil {
      *
      * @param string $eventName The name of the event.
      * @param int $usageStatsAccountId The account ID for usage statistics.
+     * @param int|null $settingsFetchTime Time taken to fetch settings in milliseconds.
+     * @param int|null $sdkInitTime Time taken to initialize the SDK in milliseconds.
+     * @param array|null $initOptions SDK initialization options included as initConfig.
      * @return array The constructed payload with required fields.
      */
-    public function getSDKUsageStatsEventPayload($eventName, $usageStatsAccountId)
-    {
+    public function getSDKUsageStatsEventPayload(
+        $eventName,
+        $usageStatsAccountId,
+        $settingsFetchTime = null,
+        $sdkInitTime = null,
+        $initOptions = null
+    ) {
         // Build userId as accountId_sdkKey (not usageStatsAccountId_sdkKey)
         $settingsService = $this->serviceContainer ? $this->serviceContainer->getSettingsService() : SettingsService::instance();
         $userId = $settingsService->accountId . '_' . $settingsService->sdkKey;
@@ -738,10 +738,92 @@ class NetworkUtil {
         $properties['d']['event']['props'][Constants::PRODUCT] = Constants::FME;
         $properties['d']['event']['props']['vwoMeta'] = UsageStatsUtil::getInstance()->getUsageStats();
 
+        // Only include non-null observability fields.
+        $data = [];
+        if ($settingsFetchTime !== null) {
+            $data['settingsFetchTime'] = $settingsFetchTime;
+        }
+        if ($sdkInitTime !== null) {
+            $data['sdkInitTime'] = $sdkInitTime;
+        }
+        $initConfig = self::buildInitConfig($initOptions);
+        if ($initConfig !== null) {
+            $data['initConfig'] = $initConfig;
+        }
+
+        if (!empty($data)) {
+            $properties['d']['event']['props']['data'] = $data;
+        }
         return $properties;
     }
 
-        /**
+    /**
+     * Builds a JSON-serializable map of SDK init options.
+     * Excludes non-serializable runtime dependencies.
+     * Only non-null fields are added.
+     *
+     * @param array|null $options The SDK initialization options to convert into initConfig.
+     * @return array|null A plain map of serializable init option values, or null if options is null.
+     */
+    private static function buildInitConfig($options)
+    {
+        if ($options === null || !is_array($options)) {
+            return null;
+        }
+
+        $initConfig = [];
+
+        // Plain/serializable init fields — set only when present
+        $optionalFields = [
+            'sdkKey' => $options['sdkKey'] ?? null,
+            'accountId' => $options['accountId'] ?? null,
+            'logger' => $options['logger'] ?? null,
+            'pollInterval' => $options['pollInterval'] ?? null,
+            'gatewayService' => $options['gatewayService'] ?? null,
+            'isUsageStatsDisabled' => $options['isUsageStatsDisabled'] ?? null,
+            '_vwo_meta' => $options['_vwo_meta'] ?? null,
+            'isAliasingEnabled' => $options['isAliasingEnabled'] ?? null,
+            'proxyUrl' => isset($options['proxy']['url']) ? $options['proxy']['url'] : null,
+            'shouldWaitForTrackingCalls' => $options['shouldWaitForTrackingCalls'] ?? null,
+            'isDevelopmentMode' => $options['isDevelopmentMode'] ?? null,
+            'hostProfile' => $options['hostProfile'] ?? null,
+        ];
+        foreach ($optionalFields as $key => $value) {
+            if ($value !== null) {
+                $initConfig[$key] = $value;
+            }
+        }
+
+        // Runtime deps are not JSON-safe; record presence only
+        $initConfig['integrations'] = isset($options['integrations']);
+        $initConfig['networkClientInterface'] = isset($options['network']['client']);
+        $initConfig['segmentEvaluator'] = isset($options['segmentation']);
+        $initConfig['storage'] = isset($options['storage']);
+        $initConfig['settings'] = isset($options['settings']) && !empty($options['settings']);
+
+        // Flatten retry config when provided
+        if (isset($options['retryConfig']) && is_array($options['retryConfig'])) {
+            $initConfig['retryConfig'] = $options['retryConfig'];
+        }
+
+        // Flatten batch config; flush callback is presence-only
+        if (isset($options['batchEvents']) && is_array($options['batchEvents'])) {
+            $batchEvents = $options['batchEvents'];
+            $batchConfig = [];
+            if (isset($batchEvents['eventsPerRequest'])) {
+                $batchConfig['eventsPerRequest'] = $batchEvents['eventsPerRequest'];
+            }
+            if (isset($batchEvents['requestTimeInterval'])) {
+                $batchConfig['requestTimeInterval'] = $batchEvents['requestTimeInterval'];
+            }
+            $batchConfig['flushCallback'] = isset($batchEvents['flushCallback']) && is_callable($batchEvents['flushCallback']);
+            $initConfig['batchEventData'] = $batchConfig;
+        }
+
+        return $initConfig;
+    }
+
+    /**
      * Creates network and retry debug event properties
      *
      * @param ResponseModel $response The response model

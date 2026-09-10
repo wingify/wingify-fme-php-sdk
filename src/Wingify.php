@@ -163,7 +163,7 @@ class Wingify
 
             if (!isset($options['isDebuggerUsed']) || !($options['isDebuggerUsed'])) {
                 if ($builder->getSettingsService()->isSettingsValidOnInit && !$wasInitializedEarlier) {
-                    SdkInitAndUsageStatsUtil::sendSdkInitEvent($builder->getSettingsService()->settingsFetchTime, $initTime, $builder->serviceContainer);
+                    SdkInitAndUsageStatsUtil::sendSdkInitEvent($builder->serviceContainer);
                 }
             }
 
@@ -173,7 +173,14 @@ class Wingify
                 $usageStatsAccountId = null;
             }
             if ($usageStatsAccountId) {
-                SdkInitAndUsageStatsUtil::sendSDKUsageStatsEvent($usageStatsAccountId, $builder->serviceContainer);
+                $settingsFetchTime = $builder->getSettingsService()->settingsFetchTime;
+                SdkInitAndUsageStatsUtil::sendSDKUsageStatsEvent(
+                    $usageStatsAccountId,
+                    $builder->serviceContainer,
+                    $settingsFetchTime,
+                    $initTime,
+                    $options
+                );
             }
 
             return $instance;

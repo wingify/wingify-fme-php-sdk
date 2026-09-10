@@ -26,17 +26,14 @@ class SdkInitAndUsageStatsUtil
 {
     /**
      * Sends an SDK init event to the FME platform. Triggered when init() completes successfully.
-     *
-     * @param int|null $settingsFetchTime Time taken to fetch settings in milliseconds
-     * @param int|null $sdkInitTime Time taken to initialize the SDK in milliseconds
      */
-    public static function sendSdkInitEvent($settingsFetchTime = null, $sdkInitTime = null, $serviceContainer = null)
+    public static function sendSdkInitEvent($serviceContainer = null)
     {
         $networkUtil = new NetworkUtil($serviceContainer);
         try {
             $properties = $networkUtil->getEventsBaseProperties(EventEnum::SDK_INIT);
         
-            $payload = $networkUtil->getSdkInitEventPayload(EventEnum::SDK_INIT, $settingsFetchTime, $sdkInitTime);
+            $payload = $networkUtil->getSdkInitEventPayload(EventEnum::SDK_INIT);
 
             $networkUtil->sendEvent($properties, $payload, EventEnum::SDK_INIT);
         } catch (\Exception $e) {
@@ -49,9 +46,17 @@ class SdkInitAndUsageStatsUtil
      * This event is triggered when the SDK is initialized.
      *
      * @param int $usageStatsAccountId The account ID for usage statistics
+     * @param int|null $settingsFetchTime Time taken to fetch settings in milliseconds
+     * @param int|null $sdkInitTime Time taken to initialize the SDK in milliseconds
+     * @param array|null $initOptions SDK initialization options included as initConfig
      */
-    public static function sendSDKUsageStatsEvent($usageStatsAccountId, $serviceContainer = null)
-    {
+    public static function sendSDKUsageStatsEvent(
+        $usageStatsAccountId,
+        $serviceContainer = null,
+        $settingsFetchTime = null,
+        $sdkInitTime = null,
+        $initOptions = null
+    ) {
         if ($serviceContainer !== null) {
             $settingsService = $serviceContainer->getSettingsService();
             $processedSettings = $settingsService->getProcessedSettings();
@@ -69,7 +74,13 @@ class SdkInitAndUsageStatsUtil
             $properties = $networkUtil->getEventsBaseProperties(EventEnum::USAGE_STATS, null, null, true, $usageStatsAccountId);
 
             // create the payload with required fields
-            $payload = $networkUtil->getSDKUsageStatsEventPayload(EventEnum::USAGE_STATS, $usageStatsAccountId);
+            $payload = $networkUtil->getSDKUsageStatsEventPayload(
+                EventEnum::USAGE_STATS,
+                $usageStatsAccountId,
+                $settingsFetchTime,
+                $sdkInitTime,
+                $initOptions
+            );
 
             // Send the constructed properties and payload as a POST request
             // send eventName in parameters so that we can enable retry for this event
